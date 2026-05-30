@@ -7,8 +7,8 @@
  * nothing in projects that haven't run /dev-chronicler:init.
  *
  * When active, it injects handover memory into the fresh agent's context:
- * the latest handover, the most recent action episodes, the decision index,
- * and the current decision-log mode.
+ * the latest handover, the most recent action episodes, recent decisions
+ * (with any superseded ones flagged), and the current decision-log mode.
  *
  * Usage: node session_start.js [--root <name>] [--mode <propose|auto>]
  */
@@ -59,9 +59,9 @@ function firstHeading(file) {
   return null;
 }
 
-function statusOf(file) {
+function supersededBy(file) {
   try {
-    const m = fs.readFileSync(file, "utf8").match(/^\*\*Status:\*\*\s*(.+?)\s*$/m);
+    const m = fs.readFileSync(file, "utf8").match(/^\*\*Superseded by:\*\*\s*(.+?)\s*$/m);
     if (m) return m[1].trim();
   } catch (_) {}
   return null;
@@ -133,14 +133,15 @@ function main() {
     );
   }
 
-  // Decision index (pointers + status).
+  // Decisions (pointers; superseded ones flagged so a fresh agent doesn't
+  // follow a reversed decision).
   const dDir = path.join(base, "decisions");
   const decisions = listEntries(dDir);
   if (decisions.length) {
     const recent = decisions.slice(-RECENT_DECISIONS);
     const lines = recent.map((f) => {
-      const st = statusOf(path.join(dDir, f));
-      return `- [${firstHeading(path.join(dDir, f)) || f}](${root}/decisions/${f})${st ? ` — ${st}` : ""}`;
+      const sup = supersededBy(path.join(dDir, f));
+      return `- [${firstHeading(path.join(dDir, f)) || f}](${root}/decisions/${f})${sup ? ` — superseded by ${sup}` : ""}`;
     });
     out.push(
       `## Decisions (${decisions.length} total, showing last ${recent.length})\n\n${lines.join("\n")}`

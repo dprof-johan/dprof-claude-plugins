@@ -3,16 +3,13 @@
  * dev-chronicler engine.
  *
  * One file, no dependencies. Shared by the slash commands and the hooks so
- * there is exactly one code path for allocating entry numbers and rebuilding
- * indexes.
+ * there is exactly one code path for allocating entry numbers.
  *
  * Subcommands:
  *   init      --root <name>                         scaffold the chronicle in a project
  *   allocate  <decision|action> --slug <s> [--title "<t>"] [--root <name>]
  *                                                   atomically reserve the next NNNN and
  *                                                   create a skeleton entry; prints its path
- *   reindex   <decision|action|handover> [--root <name>]
- *                                                   regenerate the README index block
  *   handover  --slug <s> [--root <name>]            print the path for a new timestamped handover
  *   status    [--root <name>]                       print whether active + a short summary (JSON)
  *
@@ -27,8 +24,6 @@ const fs = require("fs");
 const path = require("path");
 
 const KIND_DIR = { decision: "decisions", action: "actions", handover: "handovers" };
-const INDEX_START = "<!-- chronicle:index:start -->";
-const INDEX_END = "<!-- chronicle:index:end -->";
 
 // ---------- arg parsing ----------
 
@@ -130,17 +125,6 @@ function firstHeading(file) {
   return null;
 }
 
-function statusOf(file) {
-  try {
-    const text = fs.readFileSync(file, "utf8");
-    const m = text.match(/^\*\*Status:\*\*\s*(.+?)\s*$/m);
-    if (m) return m[1].trim();
-  } catch (_) {
-    /* ignore */
-  }
-  return null;
-}
-
 function maxNumber(dir) {
   let max = 0;
   for (const f of listEntries(dir)) {
@@ -158,7 +142,6 @@ function skeleton(kind, num, title) {
     return [
       `# ${nnnn} — ${title}`,
       "",
-      "**Status:** Proposed",
       `**Date:** ${today()}`,
       "",
       "## Context",
@@ -248,57 +231,10 @@ function cmdAllocate(positional, flags) {
       fs.unlinkSync(full); // lost the race — drop ours and try the next number
       continue;
     }
-    rebuildIndex(kind, flags);
     process.stdout.write(full + "\n");
     return;
   }
   fail("could not allocate an entry number after 50 attempts");
-}
-
-function rebuildIndex(kind, flags) {
-  const dir = path.join(rootDir(flags), KIND_DIR[kind]);
-  const readme = path.join(dir, "README.md");
-  const entries = listEntries(dir);
-  let lines;
-  if (kind === "handover") {
-    // newest first
-    lines = entries
-      .slice()
-      .reverse()
-      .map((f) => `- [${firstHeading(path.join(dir, f)) || f}](${f})`);
-  } else if (kind === "decision") {
-    lines = entries.map((f) => {
-      const heading = firstHeading(path.join(dir, f)) || f;
-      const st = statusOf(path.join(dir, f));
-      return `- [${heading}](${f})${st ? ` — ${st}` : ""}`;
-    });
-  } else {
-    lines = entries.map((f) => `- [${firstHeading(path.join(dir, f)) || f}](${f})`);
-  }
-  const block = `${INDEX_START}\n${lines.length ? lines.join("\n") : "_No entries yet._"}\n${INDEX_END}`;
-
-  let text = fs.existsSync(readme) ? fs.readFileSync(readme, "utf8") : "";
-  if (text.includes(INDEX_START) && text.includes(INDEX_END)) {
-    text = text.replace(
-      new RegExp(`${escapeRe(INDEX_START)}[\\s\\S]*?${escapeRe(INDEX_END)}`),
-      block
-    );
-  } else {
-    text = (text ? text.replace(/\s*$/, "\n\n") : "") + "## Index\n\n" + block + "\n";
-  }
-  fs.writeFileSync(readme, text);
-}
-
-function escapeRe(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function cmdReindex(positional, flags) {
-  const kind = positional[0];
-  if (!KIND_DIR[kind]) fail(`reindex expects decision|action|handover, got "${kind}"`);
-  if (!isActive(flags)) fail("dev-chronicler is not initialised in this project.");
-  rebuildIndex(kind, flags);
-  process.stdout.write(`reindexed ${KIND_DIR[kind]}\n`);
 }
 
 function cmdHandover(_positional, flags) {
@@ -345,7 +281,6 @@ function cmdInit(_positional, flags) {
   writeIfAbsent(path.join(base, "actions", "README.md"), actionsReadme());
   writeIfAbsent(path.join(base, "handovers", "README.md"), handoversReadme());
   writeIfAbsent(path.join(base, "README.md"), rootReadme(root));
-  for (const kind of Object.keys(KIND_DIR)) rebuildIndex(kind, flags);
   process.stdout.write(`initialised ${root}/ (decisions, actions, handovers)\n`);
 }
 
@@ -366,7 +301,6 @@ numbered sequentially. Captures **why** a path was chosen.
 \`\`\`
 # NNNN — Title
 
-**Status:** Proposed | Accepted | Superseded by NNNN | Reverted
 **Date:** YYYY-MM-DD
 
 ## Context
@@ -378,16 +312,13 @@ numbered sequentially. Captures **why** a path was chosen.
 
 ## Conventions
 
+- A decision is in force simply by existing — there is no Proposed/Accepted
+  status to maintain.
 - Err on too much detail — easier to trim later than to reconstruct.
 - Cross-link with \`[[NNNN-slug]]\` (or \`[[actions/NNNN-slug]]\`).
-- When a decision is reversed, mark the old one **Superseded by NNNN** rather
-  than deleting it. The history is the value.
-
-## Index
-
-${INDEX_START}
-_No entries yet._
-${INDEX_END}
+- When a decision is reversed, **don't delete it.** Add a
+  \`**Superseded by:** [[NNNN-slug]]\` line near the top, pointing at its
+  replacement. The history is the value.
 `;
 }
 
@@ -418,12 +349,6 @@ pushing/validating CI, hitting unexpected behaviour and handling it.
 
 **Don't** add an entry for every file edit — \`git log\` already captures those.
 One entry should answer "what happened in this work session?" for a later reader.
-
-## Index
-
-${INDEX_START}
-_No entries yet._
-${INDEX_END}
 `;
 }
 
@@ -431,15 +356,9 @@ function handoversReadme() {
   return `# Handovers
 
 Point-in-time snapshots of *where things stand*, for the next agent or
-teammate picking up the work. Named by timestamp, newest first. Unlike
-decisions/actions these are not a cross-linked chain — the latest one is
+teammate picking up the work. Named by timestamp, so they sort oldest→newest.
+Unlike decisions/actions these are not a cross-linked chain — the latest one is
 usually the one that matters.
-
-## Index
-
-${INDEX_START}
-_No entries yet._
-${INDEX_END}
 `;
 }
 
@@ -473,14 +392,12 @@ function main() {
       return cmdInit(positional, flags);
     case "allocate":
       return cmdAllocate(positional, flags);
-    case "reindex":
-      return cmdReindex(positional, flags);
     case "handover":
       return cmdHandover(positional, flags);
     case "status":
       return cmdStatus(positional, flags);
     default:
-      fail(`unknown subcommand "${cmd || ""}". Expected init|allocate|reindex|handover|status.`);
+      fail(`unknown subcommand "${cmd || ""}". Expected init|allocate|handover|status.`);
   }
 }
 

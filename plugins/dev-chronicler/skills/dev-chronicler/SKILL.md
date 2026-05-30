@@ -31,9 +31,8 @@ subfolders:
 
 ## The engine
 
-All numbering and index maintenance goes through one script, so entry numbers
-are allocated atomically (safe even if subagents log concurrently) and README
-indexes are regenerated rather than hand-edited. Invoke it as:
+All entry numbering goes through one script, so numbers are allocated
+atomically (safe even if subagents log concurrently). Invoke it as:
 
 ```
 node "${CLAUDE_SKILL_DIR}/../../scripts/chronicle.js" <subcommand> [args]
@@ -44,10 +43,13 @@ Subcommands:
 - `init [--root <name>]` — scaffold the chronicle (folders + READMEs + marker).
 - `allocate decision|action --slug <slug> [--title "<title>"]` — atomically
   reserve the next `NNNN` and create a skeleton entry; **prints the file path**
-  for you to fill in. It also rebuilds that folder's index.
-- `reindex decision|action|handover` — regenerate a README index block.
+  for you to fill in.
 - `handover --slug <slug>` — print the path for a new timestamped handover.
 - `status` — JSON: whether the chronicle is active, plus counts and latest entries.
+
+There is no index to maintain: the folder listing *is* the index for a human
+browsing, and the `SessionStart` hook derives the recent-entries list live from
+the files, so it can never drift.
 
 Run `status` first if unsure whether the project is initialised.
 
@@ -104,9 +106,12 @@ Steps:
    plainly), **Alternatives considered** (each rejected option + why),
    **Consequences** (what it commits us to, what we now can't do).
 4. Cross-link related ADRs with `[[NNNN-slug]]`.
-5. **Supersede, don't delete.** When a decision is reversed, set the old one's
-   status to `Superseded by NNNN` (or `Reverted`) rather than removing it — the
-   history is the value. After editing a status, run `reindex decision`.
+5. **Supersede, don't delete.** A decision is in force simply by existing —
+   there's no Proposed/Accepted status to set. When a decision is *reversed*,
+   leave the old file in place and add a `**Superseded by:** [[NNNN-slug]]` line
+   near the top, pointing at its replacement — the history is the value. (The
+   `SessionStart` hook surfaces that marker so a fresh agent won't follow a
+   reversed decision.)
 
 ## Procedure: `handover` — snapshot where things stand
 
@@ -116,10 +121,9 @@ questions, next steps, gotchas. It's the first thing injected next session.
 Steps:
 
 1. `handover --slug <short-slug>` → get a timestamped path.
-2. Write a concise but complete snapshot. Pull from recent `actions/` and any
-   open/recent `decisions/`. Favour: *what works, what's half-done, what's next,
-   what would trip someone up.*
-3. `reindex handover`.
+2. Write the file at that path: a concise but complete snapshot. Pull from recent
+   `actions/` and any open/recent `decisions/`. Favour: *what works, what's
+   half-done, what's next, what would trip someone up.*
 
 ## Procedure: `init` — scaffold the chronicle
 
@@ -192,7 +196,7 @@ want a concrete model for an action, a decision, or a handover:
 
 - **Err on too much detail.** Trimming later is cheap; reconstruction isn't.
 - **Cross-link** with `[[NNNN-slug]]` / `[[actions/NNNN-slug]]` / `[[decisions/NNNN-slug]]`.
-- **Never hand-edit a README index block** between the `chronicle:index` markers
-  — run `reindex` (or let `allocate` do it) so it can't drift.
+- **Supersede, don't delete.** Reverse a decision by adding a
+  `**Superseded by:** [[NNNN-slug]]` line to the old ADR, not by removing it.
 - **Negative results are first-class.** A reverted experiment, documented with
   the reasoning, is as valuable as a win.

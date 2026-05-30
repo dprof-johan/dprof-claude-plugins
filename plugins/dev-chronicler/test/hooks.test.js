@@ -42,12 +42,26 @@ test("session_start surfaces the latest handover body", () => {
   engine(["init"], { project: proj });
   const hPath = engine(["handover", "--slug", "state"], { project: proj }).stdout.trim();
   fs.writeFileSync(hPath, "# Handover\n\nThe walking skeleton is green.\n");
-  engine(["reindex", "handover"], { project: proj });
 
   const r = run(SESSION_START, ["--root", "dev-chronicler", "--mode", "propose"], { project: proj });
   const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
   assert.match(ctx, /Latest handover/);
   assert.match(ctx, /walking skeleton is green/);
+});
+
+test("session_start flags a superseded decision in the list", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const d1 = engine(["allocate", "decision", "--slug", "use-sqlite", "--title", "Use SQLite"], { project: proj }).stdout.trim();
+  engine(["allocate", "decision", "--slug", "use-postgres", "--title", "Use Postgres"], { project: proj });
+  // Reverse 0001 by adding a Superseded-by marker near the top (no status field).
+  const body = fs.readFileSync(d1, "utf8").replace("**Date:**", "**Superseded by:** [[0002-use-postgres]]\n**Date:**");
+  fs.writeFileSync(d1, body);
+
+  const r = run(SESSION_START, ["--root", "dev-chronicler", "--mode", "propose"], { project: proj });
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /Use SQLite.*— superseded by \[\[0002-use-postgres\]\]/);
+  assert.doesNotMatch(ctx, /Use Postgres.*superseded/, "the live decision is not flagged");
 });
 
 test("session_start reads config from CLAUDE_PLUGIN_OPTION_* env vars (no flags)", () => {

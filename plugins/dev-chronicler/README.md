@@ -31,7 +31,7 @@ Localized `README.md` files live next to the code they describe, not in this fol
   made, the agent drafts an ADR and confirms with you before writing it. Flip
   `decision_log_mode` to `auto` to have it written directly.
 - **Handover memory on session start.** A `SessionStart` hook injects the latest
-  handover, recent action episodes, and the decision index into a fresh agent's
+  handover, recent action episodes, and recent decisions into a fresh agent's
   context — so it inherits the project's reasoning without you re-explaining it.
 - **Dormant until you opt in.** Nothing happens in a project until you run
   `/dev-chronicler:init`. With no chronicle present, the hooks no-op silently, so
@@ -72,8 +72,9 @@ Set when the plugin is enabled (stored per-user); all optional:
 
 - The chronicle is driven by the `dev-chronicler` **skill** (the format and
   discipline) plus a small **engine** (`scripts/chronicle.js`) that allocates
-  entry numbers atomically and regenerates README indexes — so numbers never
-  collide (even with concurrent subagents) and indexes never drift.
+  entry numbers atomically — so numbers never collide, even with concurrent
+  subagents. There's no index to maintain: the `SessionStart` hook derives the
+  recent-entries list live from the files, so it can't drift.
 - Two **hooks**: `SessionStart` (inject handover memory) and `Stop` (an opt-in,
   heavily rate-limited reminder to log).
 
@@ -120,7 +121,7 @@ plugins/dev-chronicler/
 ├── skills/dev-chronicler/SKILL.md  # the format spec, discipline, engine usage
 ├── commands/                    # init, action, decision, handover, readme
 ├── hooks/hooks.json             # SessionStart + Stop wiring
-├── scripts/chronicle.js         # the engine (atomic numbering + index rebuild)
+├── scripts/chronicle.js         # the engine (atomic numbering)
 ├── scripts/session_start.js     # SessionStart hook
 └── scripts/stop_nudge.js        # Stop hook
 ```
