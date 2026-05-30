@@ -2,7 +2,6 @@ _Illustrative example bundled with the dev-chronicler skill. Not a real entry._
 
 # 0013 — Empty `safetyChecks` ground truth treated as N/A for the safety bucket
 
-**Status:** Accepted
 **Date:** 2026-05-13
 
 ## Context
