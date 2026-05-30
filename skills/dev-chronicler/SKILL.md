@@ -155,6 +155,39 @@ back-links like `(see actions/0012, ADR 0007)`. Create or refresh it in place
 
 ---
 
+## What a good entry looks like
+
+The chronicle is only useful if a future reader — especially a fresh agent —
+can actually rely on it. Hold every entry to these:
+
+- **The resume test.** Could someone pick up the work from this entry alone,
+  without asking you to re-explain? If not, it's missing context.
+- **Concrete outcomes, not vibes.** "Ran the tests ✅" is nearly useless. Give
+  numbers, pass/fail, before→after, and the file/commit/experiment it refers to.
+- **Reasoning, not just narration.** For decisions especially: the constraint,
+  the options you ruled out, and *why*. "Chose Postgres" tells a reviewer nothing.
+- **Negative results are first-class.** An experiment you tried and reverted,
+  with the reason, is as valuable as a win — it stops the next agent re-running it.
+- **Self-contained but linked.** Cross-link with `[[NNNN-slug]]` instead of
+  duplicating; don't make the reader hunt, but don't restate a whole ADR either.
+- **Right altitude.** Action = work *episode*, not keystrokes. Decision =
+  something a reviewer would question, not a rename or a formatter choice.
+
+Quick contrasts:
+
+| Weak | Good |
+|---|---|
+| "Ran the tests. ✅" | "`pytest -q` → 157 tests, 4 failing in scoring on empty `safetyChecks`; coerced `{}`→None in `GroundTruth`, suite green. [[decisions/0013-empty-safety-checks-as-na]]" |
+| "Switched to Postgres." | Context (SQLite write-locking under the eval harness), Decision, Alternatives (kept-SQLite rejected because…), Consequences (ops cost, a migration step). |
+| "Tweaked the prompt." | "meal_v4 added a rubric + glycemic fields: no score lift, +45% per-sample cost. Reverted; meal_v1 stays locked. [[actions/0048-...]]" |
+
+Worked examples live alongside this skill in `examples/` — read them when you
+want a concrete model for an action, a decision, or a handover:
+
+- `examples/action.md` — a bug-fix episode (symptom → blast radius → fix → why it wasn't caught).
+- `examples/decision.md` — an ADR with real alternatives and consequences.
+- `examples/handover.md` — a snapshot that primes the next agent.
+
 ## Conventions (all entry types)
 
 - **Err on too much detail.** Trimming later is cheap; reconstruction isn't.

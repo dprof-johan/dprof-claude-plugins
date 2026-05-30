@@ -37,6 +37,15 @@ Localized `README.md` files live next to the code they describe, not in this fol
   `/dev-chronicler:init`. With no chronicle present, the hooks no-op silently, so
   installing the plugin globally is safe across all your repos.
 
+## Install
+
+```
+/plugin marketplace add dprof-johan/claude-plugins-dev-chronicler
+/plugin install dev-chronicler@dev-chronicler
+```
+
+Then, in any project you want to chronicle: `/dev-chronicler:init`.
+
 ## Commands
 
 All commands are namespaced and tab-completable as `/dev-chronicler:<name>`.
@@ -74,6 +83,22 @@ Set when the plugin is enabled (stored per-user); all optional:
   chosen over Python specifically because the `node` command name is identical on
   Windows, macOS, and Linux, whereas `python` vs `python3` differs by platform.
   No npm dependencies — standard library only.
+
+## Development
+
+```bash
+claude --plugin-dir .      # load this working copy directly (no install)
+# edit, then /reload-plugins in-session to pick up skill/command/hook changes;
+# hook *scripts* take effect immediately (run fresh each time).
+
+node --test                # run the test suite (engine + hooks)
+npm run validate:json      # check the JSON manifests parse
+claude plugin validate .   # validate manifests + frontmatter + hooks
+```
+
+Tests are zero-dependency (`node:test`) and spin up throwaway project dirs to
+exercise the engine and hook scripts. The skill/command markdown is prose, so
+it's validated behaviourally (`--plugin-dir .`), not unit-tested.
 
 ## Status
 
