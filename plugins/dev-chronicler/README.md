@@ -117,7 +117,7 @@ feels noisy, set `stop_nudge` to `off`.
 
 ```
 plugins/dev-chronicler/
-├── .claude-plugin/plugin.json   # manifest + userConfig + hooks reference
+├── .claude-plugin/plugin.json   # manifest + userConfig
 ├── skills/dev-chronicler/SKILL.md  # the format spec, discipline, engine usage
 ├── commands/                    # init, action, decision, handover, readme
 ├── hooks/hooks.json             # SessionStart + Stop wiring
