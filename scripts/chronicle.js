@@ -60,7 +60,15 @@ function projectRoot() {
 }
 
 function rootName(flags) {
-  return flags.root || process.env.CHRONICLE_ROOT || "dev-chronicler";
+  // Precedence: explicit --root > CLAUDE_PLUGIN_OPTION_CHRONICLE_ROOT (the
+  // harness-resolved userConfig value: user override or schema default) >
+  // legacy CHRONICLE_ROOT > built-in default.
+  return (
+    flags.root ||
+    process.env.CLAUDE_PLUGIN_OPTION_CHRONICLE_ROOT ||
+    process.env.CHRONICLE_ROOT ||
+    "dev-chronicler"
+  );
 }
 
 function rootDir(flags) {

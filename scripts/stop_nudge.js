@@ -62,10 +62,22 @@ function newestActionMtime(actionsDir) {
 
 function main() {
   const flags = parseArgs(process.argv.slice(2));
-  const nudge = flags.nudge && flags.nudge !== true ? flags.nudge : "on";
+  // Config precedence: explicit --flag (tests) > CLAUDE_PLUGIN_OPTION_* (the
+  // value the harness resolves from userConfig — the user's override, or the
+  // schema default) > legacy env var > built-in floor. Reading the env var
+  // rather than baking ${user_config.*} into the hook command means an
+  // unresolved option is simply absent, not a hard hook failure (which is what
+  // happens for --plugin-dir-loaded plugins).
+  const nudge =
+    flags.nudge && flags.nudge !== true
+      ? flags.nudge
+      : process.env.CLAUDE_PLUGIN_OPTION_STOP_NUDGE || "on";
   if (nudge === "off") process.exit(0);
 
-  const root = flags.root && flags.root !== true ? flags.root : process.env.CHRONICLE_ROOT || "dev-chronicler";
+  const root =
+    flags.root && flags.root !== true
+      ? flags.root
+      : process.env.CLAUDE_PLUGIN_OPTION_CHRONICLE_ROOT || process.env.CHRONICLE_ROOT || "dev-chronicler";
   const base = path.join(projectRoot(), root);
   const marker = path.join(base, ".chronicler.json");
 
