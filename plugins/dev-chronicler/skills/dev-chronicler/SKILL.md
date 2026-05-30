@@ -82,7 +82,8 @@ Steps:
    - **What I did** — bullets, concrete.
    - **Outcome** — what resulted (numbers, pass/fail, what changed).
    - **Commands** — the exact commands run, in a fenced block.
-   - **Notes / related** — cross-link decisions with `[[decisions/NNNN-slug]]`.
+   - **Notes / related** — link decisions with a relative path, e.g.
+     `[decisions/NNNN — Title](../decisions/NNNN-slug.md)`.
 4. Err on too much detail — easier to trim later than to reconstruct.
 
 ## Procedure: `decision` — record/propose an ADR
@@ -105,11 +106,12 @@ Steps:
 3. Fill in: **Context** (situation/constraint/trigger), **Decision** (the choice,
    plainly), **Alternatives considered** (each rejected option + why),
    **Consequences** (what it commits us to, what we now can't do).
-4. Cross-link related ADRs with `[[NNNN-slug]]`.
+4. Cross-link related ADRs with a relative path: `[NNNN — Title](NNNN-slug.md)`
+   for another decision, `[actions/NNNN — Title](../actions/NNNN-slug.md)` for an action.
 5. **Supersede, don't delete.** A decision is in force simply by existing —
    there's no Proposed/Accepted status to set. When a decision is *reversed*,
-   leave the old file in place and add a `**Superseded by:** [[NNNN-slug]]` line
-   near the top, pointing at its replacement — the history is the value. (The
+   leave the old file in place and add a `**Superseded by:** [NNNN — Title](NNNN-slug.md)`
+   line near the top, pointing at its replacement — the history is the value. (The
    `SessionStart` hook surfaces that marker so a fresh agent won't follow a
    reversed decision.)
 
@@ -142,7 +144,7 @@ Steps:
    - After a meaningful work *episode*, record an action entry (not per edit).
    - When a non-trivial decision is made, propose an ADR (or write it directly
      if decision_log_mode = auto).
-   - Cross-link with `[[NNNN-slug]]`; supersede ADRs rather than deleting them.
+   - Cross-link with relative Markdown links; supersede ADRs rather than deleting them.
    - See the `dev-chronicler` skill for the format and the engine commands.
    ```
 
@@ -172,8 +174,8 @@ can actually rely on it. Hold every entry to these:
   the options you ruled out, and *why*. "Chose Postgres" tells a reviewer nothing.
 - **Negative results are first-class.** An experiment you tried and reverted,
   with the reason, is as valuable as a win — it stops the next agent re-running it.
-- **Self-contained but linked.** Cross-link with `[[NNNN-slug]]` instead of
-  duplicating; don't make the reader hunt, but don't restate a whole ADR either.
+- **Self-contained but linked.** Cross-link with relative Markdown links instead
+  of duplicating; don't make the reader hunt, but don't restate a whole ADR either.
 - **Right altitude.** Action = work *episode*, not keystrokes. Decision =
   something a reviewer would question, not a rename or a formatter choice.
 
@@ -181,9 +183,9 @@ Quick contrasts:
 
 | Weak | Good |
 |---|---|
-| "Ran the tests. ✅" | "`pytest -q` → 157 tests, 4 failing in scoring on empty `safetyChecks`; coerced `{}`→None in `GroundTruth`, suite green. [[decisions/0013-empty-safety-checks-as-na]]" |
+| "Ran the tests. ✅" | "`pytest -q` → 157 tests, 4 failing in scoring on empty `safetyChecks`; coerced `{}`→None in `GroundTruth`, suite green. [decisions/0013 — empty safetyChecks as N/A](../decisions/0013-empty-safety-checks-as-na.md)" |
 | "Switched to Postgres." | Context (SQLite write-locking under the eval harness), Decision, Alternatives (kept-SQLite rejected because…), Consequences (ops cost, a migration step). |
-| "Tweaked the prompt." | "meal_v4 added a rubric + glycemic fields: no score lift, +45% per-sample cost. Reverted; meal_v1 stays locked. [[actions/0048-...]]" |
+| "Tweaked the prompt." | "meal_v4 added a rubric + glycemic fields: no score lift, +45% per-sample cost. Reverted; meal_v1 stays locked. [0048 — meal-v4 sweep](0048-meal-v4-sweep.md)" |
 
 Worked examples live alongside this skill in `examples/` — read them when you
 want a concrete model for an action, a decision, or a handover:
@@ -195,8 +197,11 @@ want a concrete model for an action, a decision, or a handover:
 ## Conventions (all entry types)
 
 - **Err on too much detail.** Trimming later is cheap; reconstruction isn't.
-- **Cross-link** with `[[NNNN-slug]]` / `[[actions/NNNN-slug]]` / `[[decisions/NNNN-slug]]`.
+- **Cross-link** with standard relative Markdown links so they render on GitHub
+  and in IDEs: `[NNNN — Title](NNNN-slug.md)` within the same folder,
+  `[actions/NNNN — Title](../actions/NNNN-slug.md)` or
+  `[decisions/NNNN — Title](../decisions/NNNN-slug.md)` across folders.
 - **Supersede, don't delete.** Reverse a decision by adding a
-  `**Superseded by:** [[NNNN-slug]]` line to the old ADR, not by removing it.
+  `**Superseded by:** [NNNN — Title](NNNN-slug.md)` line to the old ADR, not by removing it.
 - **Negative results are first-class.** A reverted experiment, documented with
   the reasoning, is as valuable as a win.

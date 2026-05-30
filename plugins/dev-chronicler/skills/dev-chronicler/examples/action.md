@@ -31,6 +31,6 @@ uv run pytest -q
 ```
 
 ## Notes / related
-- [[decisions/0013-empty-safety-checks-as-na]] — the design decision this bug forced.
+- [decisions/0013 — empty safetyChecks as N/A](../decisions/0013-empty-safety-checks-as-na.md) — the design decision this bug forced.
 - Why it escaped: no test exercised the `{}` shape, and the aggregator silently
   absorbed `error` rows as score=0.
