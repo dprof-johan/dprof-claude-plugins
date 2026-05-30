@@ -1,6 +1,7 @@
 ---
 description: Create or refresh a localized README.md for a directory, linked back into the chronicle.
 argument-hint: "[directory path]"
+model: opus
 ---
 
 Use the **dev-chronicler** skill, `readme` procedure, to create or refresh a
