@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/session_start.js\" --root \"${user_config.chronicle_root}\" --mode \"${user_config.decision_log_mode}\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/stop_nudge.js\" --root \"${user_config.chronicle_root}\" --nudge \"${user_config.stop_nudge}\""
+          }
+        ]
+      }
+    ]
+  }
+}
