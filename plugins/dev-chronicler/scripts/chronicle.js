@@ -447,7 +447,7 @@ function rootReadme(root) {
   return `# ${root}
 
 The development chronicle for this project, maintained by the
-[dev-chronicler](https://github.com/dprof-johan/claude-plugins-dev-chronicler) plugin.
+[dev-chronicler](https://github.com/dprof-johan/dprof-claude-plugins/tree/main/plugins/dev-chronicler) plugin.
 
 - [\`decisions/\`](decisions/) — **why** we chose what we chose (ADRs).
 - [\`actions/\`](actions/) — **what** we actually did (build journal).
