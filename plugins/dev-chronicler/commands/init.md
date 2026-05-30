@@ -1,6 +1,7 @@
 ---
 description: Scaffold the dev-chronicler chronicle (decisions/actions/handovers) into this project and add a CLAUDE.md stub.
 argument-hint: "[root-folder-name]"
+model: haiku
 ---
 
 Use the **dev-chronicler** skill, `init` procedure, to scaffold the development
