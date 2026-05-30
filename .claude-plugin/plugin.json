@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "dev-chronicler",
+  "description": "Keeps an automatic, human-readable chronicle of the decisions and actions taken while developing a project, and feeds it back to fresh agents as handover memory.",
+  "version": "0.1.0",
+  "author": {
+    "name": "dprof-johan"
+  },
+  "homepage": "https://github.com/dprof-johan/claude-plugins-dev-chronicler",
+  "keywords": ["logging", "adr", "decision-log", "action-log", "handover", "memory"],
+  "userConfig": {
+    "decision_log_mode": {
+      "type": "string",
+      "title": "Decision log mode",
+      "description": "propose = draft an ADR and confirm with you before writing it; auto = write ADRs directly without asking.",
+      "default": "propose"
+    },
+    "chronicle_root": {
+      "type": "string",
+      "title": "Chronicle root folder",
+      "description": "Name of the visible folder (relative to the project root) that holds decisions/, actions/ and handovers/.",
+      "default": "dev-chronicler"
+    },
+    "stop_nudge": {
+      "type": "string",
+      "title": "Stop nudge",
+      "description": "on = after a work session, gently remind to log an action entry if one looks missing; off = never nudge.",
+      "default": "on"
+    }
+  },
+  "hooks": "./hooks/hooks.json"
+}

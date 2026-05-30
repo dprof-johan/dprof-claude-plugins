@@ -1,0 +1,116 @@
+"use strict";
+
+const { test } = require("node:test");
+const assert = require("node:assert");
+const fs = require("fs");
+const path = require("path");
+
+const { mkProject, mkDataDir, run, engine, SESSION_START, STOP_NUDGE } = require("./helpers");
+
+const HOUR = 60 * 60 * 1000;
+
+function backdate(file, ms) {
+  const t = (Date.now() - ms) / 1000;
+  fs.utimesSync(file, t, t);
+}
+
+// ---------- SessionStart ----------
+
+test("session_start is silent on an un-initialised project", () => {
+  const proj = mkProject();
+  const r = run(SESSION_START, ["--root", "dev-chronicler", "--mode", "propose"], { project: proj });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), "", "no context injected");
+});
+
+test("session_start injects mode, recent actions, and decisions when active", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  engine(["allocate", "action", "--slug", "scaffolded", "--title", "Scaffolded toolchain"], { project: proj });
+  engine(["allocate", "decision", "--slug", "evals", "--title", "Evals platform"], { project: proj });
+
+  const r = run(SESSION_START, ["--root", "dev-chronicler", "--mode", "auto"], { project: proj });
+  assert.equal(r.status, 0);
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /decision_log_mode = \*\*auto\*\*/);
+  assert.match(ctx, /Scaffolded toolchain/);
+  assert.match(ctx, /Evals platform/);
+});
+
+test("session_start surfaces the latest handover body", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const hPath = engine(["handover", "--slug", "state"], { project: proj }).stdout.trim();
+  fs.writeFileSync(hPath, "# Handover\n\nThe walking skeleton is green.\n");
+  engine(["reindex", "handover"], { project: proj });
+
+  const r = run(SESSION_START, ["--root", "dev-chronicler", "--mode", "propose"], { project: proj });
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /Latest handover/);
+  assert.match(ctx, /walking skeleton is green/);
+});
+
+// ---------- Stop nudge ----------
+
+test("stop_nudge is silent when disabled", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const r = run(STOP_NUDGE, ["--root", "dev-chronicler", "--nudge", "off"], { project: proj });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), "");
+});
+
+test("stop_nudge is silent right after init (chronicle too fresh)", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const data = mkDataDir();
+  const r = run(STOP_NUDGE, ["--root", "dev-chronicler", "--nudge", "on"], {
+    project: proj,
+    env: { CLAUDE_PLUGIN_DATA: data },
+  });
+  assert.equal(r.stdout.trim(), "", "suppressed within the freshness window");
+});
+
+test("stop_nudge fires once when work is stale, then is rate-limited", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const data = mkDataDir();
+  // Age the marker beyond the window so the 'just created' guard passes.
+  backdate(path.join(proj, "dev-chronicler", ".chronicler.json"), 2 * HOUR);
+
+  const first = run(STOP_NUDGE, ["--root", "dev-chronicler", "--nudge", "on"], {
+    project: proj,
+    env: { CLAUDE_PLUGIN_DATA: data },
+  });
+  const ctx = JSON.parse(first.stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /action-log entry/i);
+
+  // Second call immediately after → rate-limited by the state file.
+  const second = run(STOP_NUDGE, ["--root", "dev-chronicler", "--nudge", "on"], {
+    project: proj,
+    env: { CLAUDE_PLUGIN_DATA: data },
+  });
+  assert.equal(second.stdout.trim(), "", "rate-limited within the window");
+});
+
+test("stop_nudge stays silent when an action was logged recently", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const data = mkDataDir();
+  backdate(path.join(proj, "dev-chronicler", ".chronicler.json"), 2 * HOUR);
+  // A freshly written action entry → agent is clearly logging.
+  engine(["allocate", "action", "--slug", "just-logged"], { project: proj });
+
+  const r = run(STOP_NUDGE, ["--root", "dev-chronicler", "--nudge", "on"], {
+    project: proj,
+    env: { CLAUDE_PLUGIN_DATA: data },
+  });
+  assert.equal(r.stdout.trim(), "", "recent action suppresses the nudge");
+});
+
+test("stop_nudge is silent on an un-initialised project", () => {
+  const proj = mkProject();
+  const r = run(STOP_NUDGE, ["--root", "dev-chronicler", "--nudge", "on"], { project: proj });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), "");
+});

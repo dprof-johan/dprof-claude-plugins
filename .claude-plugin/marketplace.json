@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "dev-chronicler",
+  "owner": {
+    "name": "dprof-johan"
+  },
+  "description": "dev-chronicler: an automatic decision/action/handover chronicle that doubles as agent handover memory.",
+  "plugins": [
+    {
+      "name": "dev-chronicler",
+      "source": ".",
+      "description": "Keeps a human-readable chronicle of decisions and actions, and feeds it back to fresh agents as handover memory.",
+      "version": "0.1.0",
+      "author": { "name": "dprof-johan" },
+      "homepage": "https://github.com/dprof-johan/claude-plugins-dev-chronicler",
+      "repository": "https://github.com/dprof-johan/claude-plugins-dev-chronicler",
+      "license": "MIT",
+      "keywords": ["logging", "adr", "decision-log", "action-log", "handover", "memory"]
+    }
+  ]
+}
