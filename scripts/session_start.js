@@ -78,8 +78,20 @@ function emit(additionalContext) {
 
 function main() {
   const flags = parseArgs(process.argv.slice(2));
-  const root = flags.root && flags.root !== true ? flags.root : process.env.CHRONICLE_ROOT || "dev-chronicler";
-  const mode = flags.mode && flags.mode !== true ? flags.mode : "propose";
+  // Config precedence: explicit --flag (tests) > CLAUDE_PLUGIN_OPTION_* (the
+  // value the harness resolves from userConfig — the user's override, or the
+  // schema default) > legacy env var > built-in floor. Reading the env var
+  // rather than baking ${user_config.*} into the hook command means an
+  // unresolved option is simply absent, not a hard hook failure (which is what
+  // happens for --plugin-dir-loaded plugins).
+  const root =
+    flags.root && flags.root !== true
+      ? flags.root
+      : process.env.CLAUDE_PLUGIN_OPTION_CHRONICLE_ROOT || process.env.CHRONICLE_ROOT || "dev-chronicler";
+  const mode =
+    flags.mode && flags.mode !== true
+      ? flags.mode
+      : process.env.CLAUDE_PLUGIN_OPTION_DECISION_LOG_MODE || "propose";
   const base = path.join(projectRoot(), root);
 
   // Gate: do nothing unless this project has been initialised.

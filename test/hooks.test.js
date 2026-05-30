@@ -50,6 +50,38 @@ test("session_start surfaces the latest handover body", () => {
   assert.match(ctx, /walking skeleton is green/);
 });
 
+test("session_start reads config from CLAUDE_PLUGIN_OPTION_* env vars (no flags)", () => {
+  // Mirrors how the hook actually runs: hooks.json no longer passes
+  // ${user_config.*} as flags, so the script must pick up the harness-exported
+  // CLAUDE_PLUGIN_OPTION_* env vars. This is the path that was broken under
+  // --plugin-dir (unresolved ${user_config.*} hard-failed the whole hook).
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  engine(["allocate", "decision", "--slug", "evals", "--title", "Evals platform"], { project: proj });
+
+  const r = run(SESSION_START, [], {
+    project: proj,
+    env: { CLAUDE_PLUGIN_OPTION_DECISION_LOG_MODE: "auto" },
+  });
+  assert.equal(r.status, 0);
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /decision_log_mode = \*\*auto\*\*/);
+  assert.match(ctx, /Evals platform/);
+});
+
+test("session_start honours a custom chronicle_root via env var", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj, env: { CLAUDE_PLUGIN_OPTION_CHRONICLE_ROOT: "docs/chronicle" } });
+
+  const r = run(SESSION_START, [], {
+    project: proj,
+    env: { CLAUDE_PLUGIN_OPTION_CHRONICLE_ROOT: "docs/chronicle" },
+  });
+  assert.equal(r.status, 0);
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /docs\/chronicle/);
+});
+
 // ---------- Stop nudge ----------
 
 test("stop_nudge is silent when disabled", () => {
@@ -113,4 +145,33 @@ test("stop_nudge is silent on an un-initialised project", () => {
   const r = run(STOP_NUDGE, ["--root", "dev-chronicler", "--nudge", "on"], { project: proj });
   assert.equal(r.status, 0);
   assert.equal(r.stdout.trim(), "");
+});
+
+test("stop_nudge reads config from CLAUDE_PLUGIN_OPTION_* env vars (no flags)", () => {
+  // The hook runs with no flags; --nudge off must still be honoured via the
+  // harness-exported env var.
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const r = run(STOP_NUDGE, [], {
+    project: proj,
+    env: { CLAUDE_PLUGIN_OPTION_STOP_NUDGE: "off" },
+  });
+  assert.equal(r.status, 0);
+  assert.equal(r.stdout.trim(), "", "stop_nudge=off via env suppresses the nudge");
+});
+
+test("stop_nudge fires (no flags) when stale, reading root from env var", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj, env: { CLAUDE_PLUGIN_OPTION_CHRONICLE_ROOT: "log" } });
+  const data = mkDataDir();
+  backdate(path.join(proj, "log", ".chronicler.json"), 2 * HOUR);
+
+  const r = run(STOP_NUDGE, [], {
+    project: proj,
+    env: { CLAUDE_PLUGIN_OPTION_CHRONICLE_ROOT: "log", CLAUDE_PLUGIN_DATA: data },
+  });
+  assert.equal(r.status, 0);
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.match(ctx, /action-log entry/i);
+  assert.match(ctx, /\blog\/actions\//, "nudge references the custom root");
 });

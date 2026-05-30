@@ -8,7 +8,10 @@
   "plugins": [
     {
       "name": "dev-chronicler",
-      "source": ".",
+      "source": {
+        "source": "github",
+        "repo": "dprof-johan/claude-plugins-dev-chronicler"
+      },
       "description": "Keeps a human-readable chronicle of decisions and actions, and feeds it back to fresh agents as handover memory.",
       "version": "0.1.0",
       "author": { "name": "dprof-johan" },
