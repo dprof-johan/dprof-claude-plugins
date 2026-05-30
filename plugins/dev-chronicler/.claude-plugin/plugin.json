@@ -6,7 +6,7 @@
   "author": {
     "name": "dprof-johan"
   },
-  "homepage": "https://github.com/dprof-johan/claude-plugins-dev-chronicler",
+  "homepage": "https://github.com/dprof-johan/dprof-claude-plugins/tree/main/plugins/dev-chronicler",
   "keywords": ["logging", "adr", "decision-log", "action-log", "handover", "memory"],
   "userConfig": {
     "decision_log_mode": {
