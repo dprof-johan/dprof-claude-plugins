@@ -10,7 +10,7 @@ _Illustrative example bundled with the dev-chronicler skill. Not a real entry._
 object) alongside full `guardrailCheck` and `mealAnalysis` blocks — the
 annotators' convention for "no safety expectations for this benign sample."
 A crash on this shape was masking ~11 pp of score on every model
-([[actions/0052-load-gt-empty-safety-checks-fix]]). The fix is settled; the open
+([actions/0052 — load-gt empty-safetyChecks fix](../actions/0052-load-gt-empty-safety-checks-fix.md)). The fix is settled; the open
 question is how those 8 samples *should* score once they parse.
 
 ## Decision
@@ -38,5 +38,5 @@ ran on them; the work just isn't scoreable against an absent ground truth.
   here so it reads as judgment, not an oversight.
 
 ## Related
-- [[actions/0052-load-gt-empty-safety-checks-fix]] — the episode that surfaced this.
-- [[0009-f1-for-ingredient-scoring]] — the other deliberate departure from brief literalism.
+- [actions/0052 — load-gt empty-safetyChecks fix](../actions/0052-load-gt-empty-safety-checks-fix.md) — the episode that surfaced this.
+- [0009 — F1 for ingredient scoring](0009-f1-for-ingredient-scoring.md) — the other deliberate departure from brief literalism.

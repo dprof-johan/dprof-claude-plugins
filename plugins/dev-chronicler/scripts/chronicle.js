@@ -162,7 +162,7 @@ function skeleton(kind, num, title) {
       "",
       "## Related",
       "",
-      "_Cross-link with [[NNNN-slug]] to other decisions or [[actions/NNNN-slug]]._",
+      "_Relative Markdown links — another decision: [NNNN — Title](NNNN-slug.md); an action: [actions/NNNN — Title](../actions/NNNN-slug.md)._",
       "",
     ].join("\n");
   }
@@ -181,7 +181,7 @@ function skeleton(kind, num, title) {
     "## Commands",
     "",
     "## Notes / related",
-    "- _Cross-link with [[decisions/NNNN-slug]] or [[NNNN-slug]]._",
+    "- _Relative Markdown links — a decision: [decisions/NNNN — Title](../decisions/NNNN-slug.md); another action: [NNNN — Title](NNNN-slug.md)._",
     "",
   ].join("\n");
 }
@@ -315,10 +315,12 @@ numbered sequentially. Captures **why** a path was chosen.
 - A decision is in force simply by existing — there is no Proposed/Accepted
   status to maintain.
 - Err on too much detail — easier to trim later than to reconstruct.
-- Cross-link with \`[[NNNN-slug]]\` (or \`[[actions/NNNN-slug]]\`).
+- Cross-link with **standard relative Markdown links** (they render on GitHub
+  and in IDEs): \`[NNNN — Title](NNNN-slug.md)\` for another decision,
+  \`[actions/NNNN — Title](../actions/NNNN-slug.md)\` for an action.
 - When a decision is reversed, **don't delete it.** Add a
-  \`**Superseded by:** [[NNNN-slug]]\` line near the top, pointing at its
-  replacement. The history is the value.
+  \`**Superseded by:** [NNNN — Title](NNNN-slug.md)\` line near the top, pointing
+  at its replacement. The history is the value.
 `;
 }
 

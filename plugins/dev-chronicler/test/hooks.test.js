@@ -55,12 +55,13 @@ test("session_start flags a superseded decision in the list", () => {
   const d1 = engine(["allocate", "decision", "--slug", "use-sqlite", "--title", "Use SQLite"], { project: proj }).stdout.trim();
   engine(["allocate", "decision", "--slug", "use-postgres", "--title", "Use Postgres"], { project: proj });
   // Reverse 0001 by adding a Superseded-by marker near the top (no status field).
-  const body = fs.readFileSync(d1, "utf8").replace("**Date:**", "**Superseded by:** [[0002-use-postgres]]\n**Date:**");
+  const marker = "**Superseded by:** [0002 — Use Postgres](0002-use-postgres.md)";
+  const body = fs.readFileSync(d1, "utf8").replace("**Date:**", `${marker}\n**Date:**`);
   fs.writeFileSync(d1, body);
 
   const r = run(SESSION_START, ["--root", "dev-chronicler", "--mode", "propose"], { project: proj });
   const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
-  assert.match(ctx, /Use SQLite.*— superseded by \[\[0002-use-postgres\]\]/);
+  assert.match(ctx, /Use SQLite.*— superseded by \[0002 — Use Postgres\]\(0002-use-postgres\.md\)/);
   assert.doesNotMatch(ctx, /Use Postgres.*superseded/, "the live decision is not flagged");
 });
 
