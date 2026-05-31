@@ -8,7 +8,7 @@ description: >-
   in a project (init), when writing a handover summary, or when creating a
   localized README for a directory. Also consult it whenever you are about to
   write into the chronicle and need the format and discipline.
-argument-hint: "[init|action|decision|handover|readme|doctor|migrate] [topic]"
+argument-hint: "[init|action|decision|handover|readme|doctor|migrate|accept] [topic]"
 allowed-tools: Bash, Read, Edit, Write, Glob
 ---
 
@@ -41,17 +41,22 @@ node "${CLAUDE_SKILL_DIR}/../../scripts/chronicle.js" <subcommand> [args]
 Subcommands:
 
 - `init [--root <name>]` — scaffold the chronicle (folders + READMEs + marker).
-- `allocate decision|action --slug <slug> [--title "<title>"]` — atomically
-  reserve the next `NNNN` and create a skeleton entry; **prints the file path**
-  for you to fill in.
+- `allocate decision --slug <slug> [--title "<title>"]` — reserve the next `NNNN`
+  decision and create a skeleton; **prints the file path** for you to fill in.
+- `allocate action --type <feat|fix|docs|refactor|test|chore> --slug <slug> [--title "<title>"]`
+  — same, for an action. The **type is required** and goes in the filename
+  (`NNNN-<type>-slug.md`).
 - `handover --slug <slug> [--title "<title>"]` — create a timestamped handover
   from a skeleton and **print its path** for you to fill in.
 - `status` — JSON: whether the chronicle is active, plus counts and latest entries.
+- `pending [--json]` — list decisions not yet **Accepted** (human-confirmed).
+- `accept <NNNN>` — mark a decision **Accepted**. Run this only when the *human*
+  has confirmed the record; never set it yourself unprompted.
 - `doctor [--json]` — check health: broken relative links, leftover
-  `[[wikilinks]]`, unfilled placeholders, missing sections. Exits non-zero on errors.
+  `[[wikilinks]]`, unfilled placeholders, missing sections, plus cheap quality
+  checks (action type in filename, decision has a Status, Commands non-empty).
 - `migrate [--dry-run]` — bring a chronicle made by an older version up to the
-  current format (drop index blocks & `**Status:**` lines, convert wikilinks to
-  relative links).
+  current format (drop index blocks, convert old `Status: Superseded` + wikilinks).
 
 There is no index to maintain: the folder listing *is* the index for a human
 browsing, and the `SessionStart` hook derives the recent-entries list live from
@@ -82,15 +87,21 @@ rather than guessing or padding.
 
 Steps:
 
-1. Choose a short kebab-case `slug` and a human title.
-2. `allocate action --slug <slug> --title "<title>"` → get the file path.
+1. Choose a short kebab-case `slug`, a human title, and a **type** — one of
+   `feat | fix | docs | refactor | test | chore` (Conventional Commits; classifies
+   the episode and goes in the filename).
+2. `allocate action --type <type> --slug <slug> --title "<title>"` → get the path.
 3. Fill in the skeleton with `Edit`:
-   - **What I did** — bullets, concrete.
-   - **Outcome** — what resulted (numbers, pass/fail, what changed).
-   - **Commands** — the exact commands run, in a fenced block.
-   - **Notes / related** — link decisions with a relative path, e.g.
-     `[decisions/NNNN — Title](../decisions/NNNN-slug.md)`.
-4. Err on too much detail — easier to trim later than to reconstruct.
+   - **What I did** — what changed and **why** (the intent), not keystrokes.
+   - **Outcome** — concrete result with evidence: numbers, pass/fail, before→after.
+     Record **what failed or you ruled out** too — negative results stop the next
+     agent repeating a dead end. Keep it blameless and factual.
+   - **Commands** — the **exact, runnable** commands, in a fenced block, so the
+     result can be reproduced (pair outcomes with the command that produced them).
+   - **Notes / related** — why it mattered / next step; link a decision with a
+     relative path, e.g. `[decisions/NNNN — Title](../decisions/NNNN-slug.md)`.
+4. Right altitude: one entry per *episode*, written while it's fresh — not per
+   file-edit, not per keystroke.
 
 ## Procedure: `decision` — record/propose an ADR
 
@@ -105,21 +116,38 @@ Behaviour depends on **decision_log_mode** (surfaced at session start):
   file once they're happy.
 - **auto**: write the ADR directly without the confirmation round-trip.
 
+Record a decision when there is a **justified design choice tied to a real
+requirement** (MADR's test) — not for renames or obvious wiring.
+
 Steps:
 
 1. Choose a `slug` and title.
-2. `allocate decision --slug <slug> --title "<title>"` → get the file path.
-3. Fill in: **Context** (situation/constraint/trigger), **Decision** (the choice,
-   plainly), **Alternatives considered** (each rejected option + why),
-   **Consequences** (what it commits us to, what we now can't do).
+2. `allocate decision --slug <slug> --title "<title>"` → get the file path. It
+   starts at **`**Status:** Proposed`** (see acceptance below).
+3. Fill in:
+   - **Context** — the *forces* at play (technical, product, constraints) and the
+     trigger; value-neutral.
+   - **Decision** — the choice plainly, **with its rationale**: "we will X
+     **because** Y". The *because* is required (MADR).
+   - **Alternatives considered** — each serious option with its **pros/cons and
+     why it was rejected** — not a bare list of names (Fowler).
+   - **Consequences** — what it commits us to, including the **negative and neutral**
+     consequences and follow-on obligations, not just the upsides (Nygard).
 4. Cross-link related ADRs with a relative path: `[NNNN — Title](NNNN-slug.md)`
-   for another decision, `[actions/NNNN — Title](../actions/NNNN-slug.md)` for an action.
-5. **Supersede, don't delete.** A decision is in force simply by existing —
-   there's no Proposed/Accepted status to set. When a decision is *reversed*,
-   leave the old file in place and add a `**Superseded by:** [NNNN — Title](NNNN-slug.md)`
-   line near the top, pointing at its replacement — the history is the value. (The
-   `SessionStart` hook surfaces that marker so a fresh agent won't follow a
-   reversed decision.)
+   for another decision, `[actions/NNNN-type — Title](../actions/NNNN-type-slug.md)` for an action.
+5. **Supersede, don't delete.** When a decision is *reversed*, leave the old file
+   and add a `**Superseded by:** [NNNN — Title](NNNN-slug.md)` line near the top
+   (Nygard). This is a separate axis from Status (below).
+
+### Acceptance (human-confirmed correctness)
+
+New decisions are **Proposed**. **Accepted** means a *human* has confirmed the
+record is correct — so **only the human grants it**, via `/dev-chronicler:accept`.
+**Never wait** for acceptance and never set it yourself: write the ADR Proposed and
+keep working. At a natural pause (the `SessionStart` hook will remind you when some
+are pending), offer to walk the user through accepting — `pending` lists them,
+`accept <NNNN>` marks one. (This is distinct from **decision_log_mode** above,
+which only governs whether you draft-and-confirm *content* before writing.)
 
 ## Procedure: `handover` — snapshot where things stand
 
@@ -148,9 +176,11 @@ Steps:
    This project keeps a development chronicle in `dev-chronicler/`
    (decisions/ = why, actions/ = what, handovers/ = where things stand).
 
-   - After a meaningful work *episode*, record an action entry (not per edit).
-   - When a non-trivial decision is made, propose an ADR (or write it directly
-     if decision_log_mode = auto).
+   - After a meaningful work *episode*, record an action entry (not per edit);
+     actions carry a type (feat/fix/docs/refactor/test/chore) in the filename.
+   - When a non-trivial decision is made, write an ADR with a "because" rationale,
+     real alternatives, and the downsides. New ADRs are Proposed; only the human
+     marks them Accepted (`/dev-chronicler:accept`) — never wait on that.
    - Cross-link with relative Markdown links; supersede ADRs rather than deleting them.
    - See the `dev-chronicler` skill for the format and the engine commands.
    ```
@@ -180,16 +210,30 @@ Run `doctor` to validate the chronicle and report issues:
 3. Offer to fix the concrete ones — a broken link usually means a wrong relative
    path or a renamed file; a wikilink should become a relative Markdown link.
 
+## Procedure: `accept` — let the human confirm decisions
+
+**Accepted** = a human has confirmed the decision record is correct. You never set
+it yourself and you never block on it.
+
+1. `pending` → list decisions still **Proposed**.
+2. For each, briefly show the user the decision and ask whether it's correct.
+3. On their yes, `accept <NNNN>`. On no, leave it Proposed (and fix the record if
+   they point out a problem).
+
+Surface this at a natural pause when the `SessionStart` hook reports pending
+decisions — don't interrupt mid-task, and don't wait for the answer to continue.
+
 ## Procedure: `migrate` — upgrade an older chronicle
 
 For a chronicle created by an earlier plugin version (it still has `## Index`
-blocks, `**Status:** Proposed/Accepted` lines, or `[[wikilinks]]`):
+blocks, an old `**Status:** Superseded by NNNN` line, or `[[wikilinks]]`):
 
 1. `migrate --dry-run` → preview which files would change.
-2. `migrate` → rewrite them in place (drop index blocks & status lines, convert
-   wikilinks to relative links, resolving `**Status:** Superseded by NNNN` into a
-   `**Superseded by:** [link]`).
-3. `doctor` → confirm the result is clean.
+2. `migrate` → rewrite in place: drop index blocks, convert `[[wikilinks]]` to
+   relative links, and turn an old `**Status:** Superseded by NNNN` into a
+   `**Superseded by:** [link]` marker. (Proposed/Accepted status lines are kept.)
+3. `doctor` → confirm the result is clean. Note: old action files won't have a
+   type prefix in their name; `doctor` will warn — rename them `NNNN-<type>-slug`.
 
 ---
 
@@ -217,7 +261,7 @@ Quick contrasts:
 |---|---|
 | "Ran the tests. ✅" | "`pytest -q` → 157 tests, 4 failing in scoring on empty `safetyChecks`; coerced `{}`→None in `GroundTruth`, suite green. [decisions/0013 — empty safetyChecks as N/A](../decisions/0013-empty-safety-checks-as-na.md)" |
 | "Switched to Postgres." | Context (SQLite write-locking under the eval harness), Decision, Alternatives (kept-SQLite rejected because…), Consequences (ops cost, a migration step). |
-| "Tweaked the prompt." | "meal_v4 added a rubric + glycemic fields: no score lift, +45% per-sample cost. Reverted; meal_v1 stays locked. [0048 — meal-v4 sweep](0048-meal-v4-sweep.md)" |
+| "Tweaked the prompt." | "meal_v4 added a rubric + glycemic fields: no score lift, +45% per-sample cost. Reverted; meal_v1 stays locked. [0048 — meal-v4 sweep](0048-test-meal-v4-sweep.md)" |
 
 Worked examples live alongside this skill in `examples/` — read them when you
 want a concrete model for an action, a decision, or a handover:
@@ -237,3 +281,12 @@ want a concrete model for an action, a decision, or a handover:
   `**Superseded by:** [NNNN — Title](NNNN-slug.md)` line to the old ADR, not by removing it.
 - **Negative results are first-class.** A reverted experiment, documented with
   the reasoning, is as valuable as a win.
+- **Reproducibility.** Record how every result was produced (exact commands), in
+  enough detail to re-derive it.
+- **Write while it's fresh, at episode altitude.** Contemporaneous, curated for a
+  human reader — link to artifacts rather than pasting raw diffs/logs.
+
+These conventions are drawn from published practice — Nygard's ADRs, Fowler,
+MADR, Conventional Commits, the Google SRE postmortem culture, the Pragmatic
+Programmer's engineering daybook, and lab-notebook reproducibility rules. See the
+plugin **README → "Principles & sources"** for the citations.

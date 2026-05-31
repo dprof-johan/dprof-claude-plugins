@@ -16,6 +16,7 @@ function writeDecision(proj, name, body) {
 
 const FULL_DECISION = `# 0001 — Use SQLite
 
+**Status:** Accepted
 **Date:** 2026-05-13
 
 ## Context
@@ -81,13 +82,13 @@ test("doctor flags a broken relative link as an error (exit 1)", () => {
 test("doctor accepts a valid cross-folder relative link", () => {
   const proj = mkProject();
   engine(["init"], { project: proj });
-  const action = engine(["allocate", "action", "--slug", "did-it", "--title", "Did it"], { project: proj }).stdout.trim();
-  // Fill the action so its own placeholders don't add warnings noise (not asserted, but tidy).
-  fs.writeFileSync(action, "# 0001 — Did it\n\n**Date:** 2026-05-13\n\n## What I did\n- x\n\n## Outcome\n- y\n\n## Commands\n\n## Notes / related\n- done\n");
+  const action = engine(["allocate", "action", "--type", "feat", "--slug", "did-it", "--title", "Did it"], { project: proj }).stdout.trim();
+  // Fill the action (incl. Commands, so it's a clean entry).
+  fs.writeFileSync(action, "# 0001 — Did it\n\n**Date:** 2026-05-13\n\n## What I did\n- x\n\n## Outcome\n- y\n\n## Commands\n```\nmake\n```\n\n## Notes / related\n- done\n");
   writeDecision(
     proj,
     "0001-use-sqlite.md",
-    FULL_DECISION.replace("## Related\n", "## Related\n- [actions/0001 — Did it](../actions/0001-did-it.md)\n")
+    FULL_DECISION.replace("## Related\n", "## Related\n- [actions/0001 — Did it](../actions/0001-feat-did-it.md)\n")
   );
 
   const r = engine(["doctor"], { project: proj });
@@ -103,6 +104,26 @@ test("doctor warns on an unfilled placeholder but does not error", () => {
   const r = engine(["doctor"], { project: proj });
   assert.equal(r.status, 0, "placeholders are warnings, not errors");
   assert.match(r.stdout, /unfilled skeleton placeholder/);
+});
+
+test("doctor warns (not errors) on missing action type, missing status, empty Commands", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  // Action with NO type prefix in the filename and an empty Commands section.
+  fs.writeFileSync(
+    path.join(proj, "dev-chronicler", "actions", "0001-untyped.md"),
+    "# 0001 — Untyped\n\n**Date:** 2026-05-13\n\n## What I did\n- x\n\n## Outcome\n- y\n\n## Commands\n\n## Notes / related\n- z\n"
+  );
+  // Decision with no Status line.
+  writeDecision(proj, "0001-no-status.md", "# 0001 — No status\n\n**Date:** 2026-05-13\n\n## Context\nc\n\n## Decision\nd\n\n## Alternatives considered\na\n\n## Consequences\ncons\n\n## Related\n");
+
+  const r = engine(["doctor", "--json"], { project: proj });
+  const v = JSON.parse(r.stdout);
+  assert.equal(v.ok, true, "all three are warnings, not errors");
+  const msgs = v.warnings.map((w) => w.message).join(" | ");
+  assert.match(msgs, /action filename should be NNNN-<type>/);
+  assert.match(msgs, /missing a \*\*Status:\*\* line/);
+  assert.match(msgs, /Commands section is empty/);
 });
 
 test("doctor flags a Superseded-by marker pointing at a missing file", () => {

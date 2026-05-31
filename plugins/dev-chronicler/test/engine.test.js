@@ -32,13 +32,13 @@ test("allocate assigns sequential, per-kind numbers and writes a skeleton", () =
   const proj = mkProject();
   engine(["init"], { project: proj });
 
-  const a1 = engine(["allocate", "action", "--slug", "first", "--title", "First"], { project: proj });
-  const a2 = engine(["allocate", "action", "--slug", "second"], { project: proj });
+  const a1 = engine(["allocate", "action", "--type", "feat", "--slug", "first", "--title", "First"], { project: proj });
+  const a2 = engine(["allocate", "action", "--type", "fix", "--slug", "second"], { project: proj });
   const d1 = engine(["allocate", "decision", "--slug", "pick-db", "--title", "Pick a DB"], { project: proj });
 
-  assert.match(a1.stdout.trim(), /actions[/\\]0001-first\.md$/);
-  assert.match(a2.stdout.trim(), /actions[/\\]0002-second\.md$/);
-  assert.match(d1.stdout.trim(), /decisions[/\\]0001-pick-db\.md$/, "decisions number independently");
+  assert.match(a1.stdout.trim(), /actions[/\\]0001-feat-first\.md$/, "action filename carries its type");
+  assert.match(a2.stdout.trim(), /actions[/\\]0002-fix-second\.md$/);
+  assert.match(d1.stdout.trim(), /decisions[/\\]0001-pick-db\.md$/, "decisions number independently, no type");
 
   const body = read(a1.stdout.trim());
   assert.match(body, /^# 0001 — First$/m);
@@ -46,9 +46,37 @@ test("allocate assigns sequential, per-kind numbers and writes a skeleton", () =
   assert.match(body, /## Outcome/);
 
   const adr = read(d1.stdout.trim());
-  assert.doesNotMatch(adr, /\*\*Status:\*\*/, "no Proposed/Accepted status line");
+  assert.match(adr, /^\*\*Status:\*\* Proposed$/m, "new decisions start Proposed");
   assert.match(adr, /\*\*Date:\*\*/);
   assert.match(adr, /## Alternatives considered/);
+});
+
+test("allocate action requires a valid --type", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const missing = engine(["allocate", "action", "--slug", "x"], { project: proj });
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /requires --type/);
+  const bad = engine(["allocate", "action", "--type", "wibble", "--slug", "x"], { project: proj });
+  assert.notEqual(bad.status, 0);
+  assert.match(bad.stderr, /requires --type/);
+});
+
+test("pending lists un-accepted decisions; accept marks one Accepted", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const d = engine(["allocate", "decision", "--slug", "use-sqlite", "--title", "Use SQLite"], { project: proj }).stdout.trim();
+
+  let pending = JSON.parse(engine(["pending", "--json"], { project: proj }).stdout).pending;
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0].status, "Proposed");
+
+  const acc = engine(["accept", "0001"], { project: proj });
+  assert.equal(acc.status, 0, acc.stderr);
+  assert.match(read(d), /^\*\*Status:\*\* Accepted$/m);
+
+  pending = JSON.parse(engine(["pending", "--json"], { project: proj }).stdout).pending;
+  assert.equal(pending.length, 0, "no decisions pending after acceptance");
 });
 
 test("handover creates a timestamped file from a skeleton", () => {
@@ -89,8 +117,8 @@ test("init is idempotent — re-running doesn't clobber edits", () => {
 test("status reports counts and the latest entry per kind", () => {
   const proj = mkProject();
   engine(["init"], { project: proj });
-  engine(["allocate", "action", "--slug", "first", "--title", "First episode"], { project: proj });
-  engine(["allocate", "action", "--slug", "second", "--title", "Second episode"], { project: proj });
+  engine(["allocate", "action", "--type", "feat", "--slug", "first", "--title", "First episode"], { project: proj });
+  engine(["allocate", "action", "--type", "test", "--slug", "second", "--title", "Second episode"], { project: proj });
   engine(["allocate", "decision", "--slug", "a-choice", "--title", "A choice"], { project: proj });
 
   const s = JSON.parse(engine(["status"], { project: proj }).stdout);
@@ -104,10 +132,10 @@ test("status reports counts and the latest entry per kind", () => {
 test("slugify normalises messy slugs and falls back to 'entry'", () => {
   const proj = mkProject();
   engine(["init"], { project: proj });
-  const a = engine(["allocate", "action", "--slug", "Hello, World!!  Again"], { project: proj });
-  assert.match(a.stdout.trim(), /actions[/\\]0001-hello-world-again\.md$/);
-  const b = engine(["allocate", "action", "--slug", "***"], { project: proj });
-  assert.match(b.stdout.trim(), /actions[/\\]0002-entry\.md$/);
+  const a = engine(["allocate", "action", "--type", "feat", "--slug", "Hello, World!!  Again"], { project: proj });
+  assert.match(a.stdout.trim(), /actions[/\\]0001-feat-hello-world-again\.md$/);
+  const b = engine(["allocate", "action", "--type", "chore", "--slug", "***"], { project: proj });
+  assert.match(b.stdout.trim(), /actions[/\\]0002-chore-entry\.md$/);
 });
 
 test("allocate rejects a value-less --slug", () => {
@@ -129,8 +157,8 @@ test("allocate on an un-initialised project fails loudly without writing files",
 test("custom --root is honoured", () => {
   const proj = mkProject();
   engine(["init", "--root", "chronicle"], { project: proj });
-  const a = engine(["allocate", "action", "--slug", "x", "--root", "chronicle"], { project: proj });
-  assert.match(a.stdout.trim(), /[/\\]chronicle[/\\]actions[/\\]0001-x\.md$/);
+  const a = engine(["allocate", "action", "--type", "feat", "--slug", "x", "--root", "chronicle"], { project: proj });
+  assert.match(a.stdout.trim(), /[/\\]chronicle[/\\]actions[/\\]0001-feat-x\.md$/);
 });
 
 test("concurrent allocations never share a number", async () => {
@@ -139,7 +167,7 @@ test("concurrent allocations never share a number", async () => {
 
   const N = 12;
   const runs = Array.from({ length: N }, (_, i) =>
-    engineAsync(["allocate", "action", "--slug", `episode-${i}`], { project: proj })
+    engineAsync(["allocate", "action", "--type", "feat", "--slug", `episode-${i}`], { project: proj })
   );
   const results = await Promise.all(runs);
   for (const r of results) assert.equal(r.status, 0, r.stderr);
