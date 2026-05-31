@@ -1,0 +1,60 @@
+# Changelog
+
+All notable changes to **dev-chronicler** are documented here. The format
+loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
+the `version` field in `.claude-plugin/plugin.json`.
+
+## 0.3.0
+
+### Added
+- `doctor` subcommand / `/dev-chronicler:doctor` — validates chronicle health:
+  broken relative links, leftover `[[wikilinks]]`, unfilled skeleton
+  placeholders, and missing required sections. Exits non-zero on errors;
+  supports `--json`.
+- `migrate` subcommand / `/dev-chronicler:migrate` — upgrades a chronicle made
+  by an older version: removes `## Index` blocks, drops `**Status:**`
+  Proposed/Accepted lines, converts `**Status:** Superseded by NNNN` into a
+  `**Superseded by:** [link]`, and rewrites `[[wikilinks]]` as relative links.
+  Supports `--dry-run`.
+- `handover` now **creates** the file from a skeleton (and accepts `--title`),
+  rather than only printing a path.
+
+### Changed
+- Cleaned up the `allocate` retry loop (removed dead code; the comment now
+  matches behaviour) and rejected a value-less `--slug`.
+
+### Tested / CI
+- Added `doctor`, `migrate`, and `manifests` test suites. The manifests guard
+  fails CI if the three version fields drift apart or if `plugin.json` re-declares
+  the auto-loaded `hooks/hooks.json`.
+
+## 0.2.2
+
+### Fixed
+- Cross-links now use **standard relative Markdown links** instead of Obsidian
+  `[[wikilinks]]`, which didn't render on GitHub or in IDE previews.
+
+## 0.2.1
+
+### Fixed
+- Removed the redundant `"hooks": "./hooks/hooks.json"` reference from
+  `plugin.json`. The standard hooks file is auto-loaded, so the explicit
+  reference caused a "Duplicate hooks file detected" load error.
+
+## 0.2.0
+
+### Added
+- Per-command model defaults (`init` → haiku; `action`/`decision`/`readme` →
+  opus; `handover` → sonnet).
+
+### Changed
+- Removed the persisted README index and the Proposed/Accepted status lifecycle.
+  Entries are derived live by the `SessionStart` hook, so nothing can drift. A
+  lightweight `**Superseded by:**` marker is kept for reversed decisions.
+
+## 0.1.0
+
+### Added
+- Initial release: `init`, `allocate` (action/decision), `handover`, `status`;
+  `SessionStart` (handover memory injection) and `Stop` (opt-in logging nudge)
+  hooks; the `dev-chronicler` skill and namespaced slash commands.

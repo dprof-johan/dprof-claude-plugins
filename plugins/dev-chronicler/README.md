@@ -55,8 +55,10 @@ All commands are namespaced and tab-completable as `/dev-chronicler:<name>`.
 | `/dev-chronicler:init` | Scaffold the chronicle + add a CLAUDE.md stub |
 | `/dev-chronicler:action` | Record an action-log entry for the last episode |
 | `/dev-chronicler:decision` | Record an ADR |
-| `/dev-chronicler:handover` | Write a timestamped handover snapshot |
+| `/dev-chronicler:handover` | Create a timestamped handover snapshot |
 | `/dev-chronicler:readme` | Create/refresh a localized directory README |
+| `/dev-chronicler:doctor` | Check chronicle health (links, wikilinks, placeholders, sections) |
+| `/dev-chronicler:migrate` | Upgrade a chronicle made by an older plugin version |
 
 ## Configuration
 
@@ -75,8 +77,16 @@ Set when the plugin is enabled (stored per-user); all optional:
   entry numbers atomically — so numbers never collide, even with concurrent
   subagents. There's no index to maintain: the `SessionStart` hook derives the
   recent-entries list live from the files, so it can't drift.
+- The engine also offers `doctor` (validate links/wikilinks/placeholders/sections)
+  and `migrate` (upgrade a chronicle made by an older version).
+- Cross-links are **standard relative Markdown links** so they render on GitHub
+  and in IDEs.
 - Two **hooks**: `SessionStart` (inject handover memory) and `Stop` (an opt-in,
   heavily rate-limited reminder to log).
+
+The `chronicle_root` (and the legacy `CHRONICLE_ROOT` env var) are treated as
+trusted configuration — they're joined to the project path without sanitising,
+so don't point them at untrusted input.
 
 ## Requirements
 
@@ -97,7 +107,7 @@ claude --plugin-dir .      # load this working copy directly (no install)
 # edit, then /reload-plugins in-session to pick up skill/command/hook changes;
 # hook *scripts* take effect immediately (run fresh each time).
 
-node --test                # run the test suite (engine + hooks)
+node --test                # run the test suite (engine + hooks + manifests)
 npm run validate:json      # check the plugin JSON manifests parse
 
 # validate the whole marketplace (manifests + frontmatter + hooks), from repo root:
@@ -105,12 +115,15 @@ claude plugin validate ..  # or:  cd ..  &&  claude plugin validate .
 ```
 
 Tests are zero-dependency (`node:test`) and spin up throwaway project dirs to
-exercise the engine and hook scripts. The skill/command markdown is prose, so
-it's validated behaviourally (`--plugin-dir .`), not unit-tested.
+exercise the engine and hook scripts (`engine`, `hooks`, `doctor`, `migrate`,
+`manifests`). The skill/command markdown is prose, so it's validated
+behaviourally (`--plugin-dir .`), not unit-tested.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for the per-version history.
 
 ## Status
 
-Early (`0.1.0`). The `Stop` nudge is the most experimental piece; if it ever
+Early (`0.3.x`). The `Stop` nudge is the most experimental piece; if it ever
 feels noisy, set `stop_nudge` to `off`.
 
 ## Layout
@@ -119,11 +132,12 @@ feels noisy, set `stop_nudge` to `off`.
 plugins/dev-chronicler/
 ├── .claude-plugin/plugin.json   # manifest + userConfig
 ├── skills/dev-chronicler/SKILL.md  # the format spec, discipline, engine usage
-├── commands/                    # init, action, decision, handover, readme
+├── commands/                    # init, action, decision, handover, readme, doctor, migrate
 ├── hooks/hooks.json             # SessionStart + Stop wiring
-├── scripts/chronicle.js         # the engine (atomic numbering)
+├── scripts/chronicle.js         # the engine (numbering + doctor + migrate)
 ├── scripts/session_start.js     # SessionStart hook
-└── scripts/stop_nudge.js        # Stop hook
+├── scripts/stop_nudge.js        # Stop hook
+└── CHANGELOG.md                 # per-version history
 ```
 
 The repo root holds the marketplace manifest (`.claude-plugin/marketplace.json`)

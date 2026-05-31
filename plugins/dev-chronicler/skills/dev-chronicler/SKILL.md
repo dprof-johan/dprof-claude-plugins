@@ -8,7 +8,7 @@ description: >-
   in a project (init), when writing a handover summary, or when creating a
   localized README for a directory. Also consult it whenever you are about to
   write into the chronicle and need the format and discipline.
-argument-hint: "[init|action|decision|handover|readme] [topic]"
+argument-hint: "[init|action|decision|handover|readme|doctor|migrate] [topic]"
 allowed-tools: Bash, Read, Edit, Write, Glob
 ---
 
@@ -44,8 +44,14 @@ Subcommands:
 - `allocate decision|action --slug <slug> [--title "<title>"]` — atomically
   reserve the next `NNNN` and create a skeleton entry; **prints the file path**
   for you to fill in.
-- `handover --slug <slug>` — print the path for a new timestamped handover.
+- `handover --slug <slug> [--title "<title>"]` — create a timestamped handover
+  from a skeleton and **print its path** for you to fill in.
 - `status` — JSON: whether the chronicle is active, plus counts and latest entries.
+- `doctor [--json]` — check health: broken relative links, leftover
+  `[[wikilinks]]`, unfilled placeholders, missing sections. Exits non-zero on errors.
+- `migrate [--dry-run]` — bring a chronicle made by an older version up to the
+  current format (drop index blocks & `**Status:**` lines, convert wikilinks to
+  relative links).
 
 There is no index to maintain: the folder listing *is* the index for a human
 browsing, and the `SessionStart` hook derives the recent-entries list live from
@@ -122,10 +128,11 @@ questions, next steps, gotchas. It's the first thing injected next session.
 
 Steps:
 
-1. `handover --slug <short-slug>` → get a timestamped path.
-2. Write the file at that path: a concise but complete snapshot. Pull from recent
-   `actions/` and any open/recent `decisions/`. Favour: *what works, what's
-   half-done, what's next, what would trip someone up.*
+1. `handover --slug <short-slug> [--title "<title>"]` → creates a timestamped
+   file from a skeleton and prints its path.
+2. Fill in that file with `Edit`: a concise but complete snapshot. Pull from
+   recent `actions/` and any open/recent `decisions/`. Favour: *what works,
+   what's half-done, what's next, what would trip someone up.*
 
 ## Procedure: `init` — scaffold the chronicle
 
@@ -156,8 +163,33 @@ A first-class part of the chronicle: a `README.md` *next to the code* in a
 subsystem directory, orienting a reader and linking back into the chronicle.
 Good ones include: what the directory is for, a status table of the notable
 files, "kept-for-audit / delete-safe" annotations for throwaway artifacts, and
-back-links like `(see actions/0012, ADR 0007)`. Create or refresh it in place
-(it does **not** live under the chronicle root).
+back-links into the chronicle. Create or refresh it in place (it does **not**
+live under the chronicle root).
+
+Make the back-links **real relative links** so they're clickable on GitHub and
+in IDEs — compute the path from this directory up to the chronicle root, e.g.
+from `src/eval/` to a decision: `[ADR 0007](../../dev-chronicler/decisions/0007-slug.md)`.
+
+## Procedure: `doctor` — check chronicle health
+
+Run `doctor` to validate the chronicle and report issues:
+
+1. `doctor` (add `--json` for machine-readable output).
+2. Summarise: **errors** (broken relative links, leftover `[[wikilinks]]`) first,
+   then **warnings** (unfilled skeleton placeholders, missing sections).
+3. Offer to fix the concrete ones — a broken link usually means a wrong relative
+   path or a renamed file; a wikilink should become a relative Markdown link.
+
+## Procedure: `migrate` — upgrade an older chronicle
+
+For a chronicle created by an earlier plugin version (it still has `## Index`
+blocks, `**Status:** Proposed/Accepted` lines, or `[[wikilinks]]`):
+
+1. `migrate --dry-run` → preview which files would change.
+2. `migrate` → rewrite them in place (drop index blocks & status lines, convert
+   wikilinks to relative links, resolving `**Status:** Superseded by NNNN` into a
+   `**Superseded by:** [link]`).
+3. `doctor` → confirm the result is clean.
 
 ---
 
