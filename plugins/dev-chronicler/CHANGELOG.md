@@ -4,6 +4,18 @@ All notable changes to **dev-chronicler** are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
 the `version` field in `.claude-plugin/plugin.json`.
 
+## 0.4.5
+
+### Changed
+- **`Commands` is now purposeful, not boilerplate.** The skeleton + skill reframe
+  it as *the non-trivial command(s) that reproduce/verify the Outcome* (pair each
+  with what it shows) — skip trivial ones, and omit the section entirely when
+  there's nothing worth reproducing (e.g. a design-only episode).
+- **`doctor` no longer warns on an empty `Commands` outright.** It only nudges
+  when the `Outcome` claims a concrete result (tests/pass-fail/%/before→after)
+  but no command backs it — removing the incentive to pad the section with
+  trivial commands just to clear a warning.
+
 ## 0.4.4
 
 ### Fixed

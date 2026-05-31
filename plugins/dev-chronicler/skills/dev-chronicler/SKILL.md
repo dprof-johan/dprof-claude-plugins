@@ -106,8 +106,11 @@ Steps:
    - **Outcome** — concrete result with evidence: numbers, pass/fail, before→after.
      Record **what failed or you ruled out** too — negative results stop the next
      agent repeating a dead end. Keep it blameless and factual.
-   - **Commands** — the **exact, runnable** commands, in a fenced block, so the
-     result can be reproduced (pair outcomes with the command that produced them).
+   - **Commands** — the *non-trivial* command(s) that **reproduce/verify** what you
+     claimed in Outcome, in a fenced block, each paired with what it shows (e.g.
+     `# scripted warrior win:` above the command). Skip trivial/obvious ones; if
+     there's nothing worth reproducing (a design-only episode), a short note or
+     omitting the section is fine — don't pad it just to fill the heading.
    - **Notes / related** — why it mattered / next step; link a decision with a
      relative path, e.g. `[decisions/NNNN — Title](../decisions/NNNN-slug.md)`.
 4. Right altitude: one entry per *episode*, written while it's fresh — not per
