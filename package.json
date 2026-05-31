@@ -1,0 +1,10 @@
+{
+  "name": "dprof-claude-plugins",
+  "private": true,
+  "description": "Repo-level dev scripts for the dprof-claude-plugins marketplace. Each plugin has its own package.json under plugins/<name>/.",
+  "scripts": {
+    "eval:structural": "node evals/dev-chronicler/structural-eval.js",
+    "eval:test": "node --test evals/dev-chronicler/structural.test.js"
+  },
+  "license": "MIT"
+}

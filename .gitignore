@@ -1,0 +1,6 @@
+# Python bytecode caches (generated when running the eval fixture)
+__pycache__/
+*.py[cod]
+
+# Node
+node_modules/
