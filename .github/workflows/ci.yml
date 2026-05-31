@@ -42,3 +42,5 @@ jobs:
         run: node evals/dev-chronicler/structural-eval.js
       - name: Structural eval harness self-tests
         run: node --test evals/dev-chronicler/structural.test.js
+      - name: LLM-judge harness self-tests (mock backend)
+        run: node --test evals/dev-chronicler/judge.test.js
