@@ -26,9 +26,29 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { execFileSync } = require("child_process");
+const { execFileSync, spawn } = require("child_process");
 
 const HERE = __dirname;
+
+// All progress goes to stderr so stdout stays clean (pure JSON under --json).
+function log(msg = "") {
+  process.stderr.write(msg + "\n");
+}
+function snippet(s, n = 120) {
+  const one = String(s).replace(/\s+/g, " ").trim();
+  return one.length > n ? one.slice(0, n) + "…" : one;
+}
+function toolHint(block) {
+  const i = block.input || {};
+  if (i.file_path) return " " + path.basename(i.file_path);
+  if (i.command) return " " + snippet(i.command, 70);
+  if (i.path) return " " + i.path;
+  if (i.pattern) return " /" + snippet(i.pattern, 40) + "/";
+  return "";
+}
+function fmtCost(c) {
+  return typeof c === "number" ? "$" + c.toFixed(3) : "$?";
+}
 const REPO_ROOT = path.join(HERE, "..", "..");
 const STRUCTURAL = path.join(HERE, "structural-eval.js");
 const JUDGE = path.join(HERE, "judge.js");
@@ -67,16 +87,55 @@ function rmrf(p) {
   fs.rmSync(p, { recursive: true, force: true });
 }
 
-// Drive one headless turn; returns the session id so the next turn can --resume.
+// Drive one headless turn, streaming the agent's activity live to stderr.
+// Resolves with the session id so the next turn can --resume.
 function runClaudeTurn(prompt, { cwd, pluginDir, model, sessionId, skipPermissions }) {
-  const env = { ...process.env, CLAUDE_PLUGIN_OPTION_DECISION_LOG_MODE: "auto" };
-  const args = ["-p", prompt, "--output-format", "json", "--plugin-dir", pluginDir];
-  if (model) args.push("--model", model);
-  if (skipPermissions) args.push("--dangerously-skip-permissions");
-  if (sessionId) args.push("--resume", sessionId);
-  const raw = execFileSync("claude", args, { cwd, env, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-  const envelope = JSON.parse(raw);
-  return envelope.session_id || sessionId;
+  return new Promise((resolve, reject) => {
+    const env = { ...process.env, CLAUDE_PLUGIN_OPTION_DECISION_LOG_MODE: "auto" };
+    const args = ["-p", prompt, "--output-format", "stream-json", "--verbose", "--plugin-dir", pluginDir];
+    if (model) args.push("--model", model);
+    if (skipPermissions) args.push("--dangerously-skip-permissions");
+    if (sessionId) args.push("--resume", sessionId);
+
+    const child = spawn("claude", args, { cwd, env });
+    let buf = "";
+    let session = sessionId;
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      buf += chunk.toString();
+      let nl;
+      while ((nl = buf.indexOf("\n")) !== -1) {
+        const line = buf.slice(0, nl).trim();
+        buf = buf.slice(nl + 1);
+        if (!line) continue;
+        let ev;
+        try {
+          ev = JSON.parse(line);
+        } catch (_) {
+          continue;
+        }
+        if (ev.type === "system" && ev.subtype === "init") {
+          session = ev.session_id || session;
+          log(`     · model ${ev.model || "?"}, session ${String(ev.session_id || "").slice(0, 8)}`);
+        } else if (ev.type === "assistant" && ev.message && Array.isArray(ev.message.content)) {
+          for (const b of ev.message.content) {
+            if (b.type === "text" && b.text && b.text.trim()) log(`     💬 ${snippet(b.text)}`);
+            else if (b.type === "tool_use") log(`     ⚙ ${b.name}${toolHint(b)}`);
+          }
+        } else if (ev.type === "result") {
+          session = ev.session_id || session;
+          log(`     ✓ ${ev.num_turns || "?"} turns · ${fmtCost(ev.total_cost_usd)} · ${Math.round((ev.duration_ms || 0) / 1000)}s`);
+        }
+      }
+    });
+    child.stderr.on("data", (d) => (stderr += d.toString()));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code !== 0) reject(new Error(`claude exited ${code}${stderr ? ": " + snippet(stderr, 200) : ""}`));
+      else resolve(session);
+    });
+  });
 }
 
 function runNode(script, args) {
@@ -97,7 +156,7 @@ function runNode(script, args) {
   }
 }
 
-function main() {
+async function main() {
   const flags = parseArgs(process.argv.slice(2));
   const seed = path.resolve(flags.seed || path.join(HERE, "seed"));
   const golden = path.resolve(flags.golden || path.join(HERE, "golden"));
@@ -109,16 +168,29 @@ function main() {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "dcw-run-"));
   const candidate = path.join(work, "project");
 
+  log(`╶─ dev-chronicler eval runner ──────────────`);
+  log(`   mode:    ${flags.dryRun ? "dry-run (no model)" : "live"}`);
+  log(`   seed:    ${seed}`);
+  log(`   golden:  ${golden}`);
+  log(`   judge:   ${backend}${flags.model ? " (" + flags.model + ")" : ""}`);
+  log("");
+
   try {
+    log(`▸ Preparing workspace`);
     copyDir(seed, candidate);
+    log(`     copied seed → ${candidate}`);
+    log("");
 
     if (flags.dryRun) {
-      if (!flags.json) process.stdout.write(`[dry-run] copied seed → ${candidate}; skipping generation\n`);
+      log(`▸ Generation: skipped (dry-run)`);
     } else {
+      log(`▸ Generating: ${session.steps.length} prompted turns via claude -p`);
       let sessionId;
+      let n = 0;
       for (const step of session.steps) {
-        if (!flags.json) process.stdout.write(`→ ${step.id}\n`);
-        sessionId = runClaudeTurn(step.prompt, {
+        n++;
+        log(`  → [${n}/${session.steps.length}] ${step.id}${step.note ? " — " + step.note : ""}`);
+        sessionId = await runClaudeTurn(step.prompt, {
           cwd: candidate,
           pluginDir,
           model: flags.model,
@@ -127,9 +199,16 @@ function main() {
         });
       }
     }
+    log("");
 
+    log(`▸ Scoring: structural eval`);
     const structural = runNode(STRUCTURAL, [candidate, "--json"]);
+    log(`     ${structural.score.passed}/${structural.score.total} — ${structural.ok ? "PASS" : "FAIL"}`);
+
+    log(`▸ Scoring: LLM judge (${backend})${backend === "cli" || backend === "api" ? " — querying model, please wait…" : ""}`);
     const judge = runNode(JUDGE, [candidate, "--golden", golden, "--backend", backend, "--json", ...(flags.model ? ["--model", flags.model] : [])]);
+    log(`     overall ${judge.overall}/5`);
+    log("");
 
     const result = {
       mode: flags.dryRun ? "dry-run" : "live",
@@ -141,18 +220,32 @@ function main() {
     if (flags.json) {
       process.stdout.write(JSON.stringify({ ...result, structuralChecks: structural.checks, judgeFull: judge }, null, 2) + "\n");
     } else {
-      process.stdout.write(`\n=== eval runner (${result.mode}, judge backend: ${backend}) ===\n`);
-      process.stdout.write(`structural: ${structural.score.passed}/${structural.score.total} — ${structural.ok ? "PASS" : "FAIL"}\n`);
-      process.stdout.write(`judge overall: ${judge.overall}/5\n`);
-      for (const d of judge.dimensions || []) process.stdout.write(`   ${d.score}/5  ${d.title || d.key}\n`);
-      if (judge.summary) process.stdout.write(`   ${judge.summary}\n`);
+      const out = [];
+      out.push(`=== eval result (${result.mode}, judge: ${backend}) ===`);
+      out.push("");
+      out.push(`structural: ${structural.score.passed}/${structural.score.total} — ${structural.ok ? "PASS" : "FAIL"}`);
+      for (const c of structural.checks || []) out.push(`   ${c.pass ? "✓" : "✗"} ${c.label}${c.detail ? ` (${c.detail})` : ""}`);
+      out.push("");
+      out.push(`judge overall: ${judge.overall}/5`);
+      for (const d of judge.dimensions || []) {
+        out.push(`   ${d.score}/5  ${d.title || d.key}`);
+        if (d.rationale) out.push(`         ${snippet(d.rationale, 200)}`);
+      }
+      if (judge.summary) {
+        out.push("");
+        out.push(`   summary: ${judge.summary}`);
+      }
+      process.stdout.write(out.join("\n") + "\n");
     }
 
     if (!structural.ok) process.exitCode = 1;
   } finally {
-    if (flags.keep) process.stdout.write(`(kept working dir: ${candidate})\n`);
+    if (flags.keep) log(`\n(kept working dir: ${candidate})`);
     else rmrf(work);
   }
 }
 
-main();
+main().catch((e) => {
+  process.stderr.write(`runner: ${e.message}\n`);
+  process.exit(1);
+});
