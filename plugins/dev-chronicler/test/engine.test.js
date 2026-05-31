@@ -62,6 +62,18 @@ test("allocate action requires a valid --type", () => {
   assert.match(bad.stderr, /requires --type/);
 });
 
+test("a stray date-named file does not poison action numbering", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  // A hand-rolled, date-prefixed file would otherwise parse as number 2026 → 2027.
+  fs.writeFileSync(
+    path.join(proj, "dev-chronicler", "actions", "2026-05-31-hand-rolled.md"),
+    "# 2026-05-31 — hand rolled\n"
+  );
+  const a = engine(["allocate", "action", "--type", "feat", "--slug", "real"], { project: proj });
+  assert.match(a.stdout.trim(), /actions[/\\]0001-feat-real\.md$/, "next number is 0001, not 2027");
+});
+
 test("pending lists un-accepted decisions; accept marks one Accepted", () => {
   const proj = mkProject();
   engine(["init"], { project: proj });

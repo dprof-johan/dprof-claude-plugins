@@ -173,6 +173,10 @@ function firstHeading(file) {
 function maxNumber(dir) {
   let max = 0;
   for (const f of listEntries(dir)) {
+    // Ignore date-style names (YYYY-MM-DD-…): those are malformed hand-rolled
+    // entries (or stray handovers), and a 4-digit year would otherwise poison
+    // the sequence (e.g. 2026-05-31-… → "next" = 2027). doctor flags them.
+    if (/^\d{4}-\d{2}-\d{2}/.test(f)) continue;
     const n = parseInt(f.slice(0, 4), 10);
     if (n > max) max = n;
   }

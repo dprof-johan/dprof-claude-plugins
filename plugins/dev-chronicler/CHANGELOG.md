@@ -4,6 +4,19 @@ All notable changes to **dev-chronicler** are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
 the `version` field in `.claude-plugin/plugin.json`.
 
+## 0.4.2
+
+### Fixed
+- **Force logging through the engine.** The `SessionStart` hook and the skill now
+  state emphatically: log via the bundled engine (`allocate`/`handover`) and fill
+  the file it prints — **never hand-create** files in `decisions/`/`actions/`, and
+  **never read another plugin version from `~/.claude/plugins/cache`**. Hand-rolled
+  entries were producing malformed (date-prefixed, type-less, wrongly-`Accepted`)
+  files, and the agent had been mis-picking an older cached version.
+- **Numbering is no longer poisoned by stray date-named files.** `maxNumber` skips
+  `YYYY-MM-DD-…` names, so a malformed hand-rolled file can't make the next entry
+  jump to e.g. `2027`. (doctor still flags the stray file.)
+
 ## 0.4.1
 
 ### Fixed
