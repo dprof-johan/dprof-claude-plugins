@@ -54,7 +54,7 @@ All commands are namespaced and tab-completable as `/dev-chronicler:<name>`.
 |---|---|
 | `/dev-chronicler:init` | Scaffold the chronicle + add a CLAUDE.md stub |
 | `/dev-chronicler:action` | Record an action-log entry for the last episode |
-| `/dev-chronicler:decision` | Record (or, in propose mode, draft) an ADR |
+| `/dev-chronicler:decision` | Record an ADR |
 | `/dev-chronicler:handover` | Write a timestamped handover snapshot |
 | `/dev-chronicler:readme` | Create/refresh a localized directory README |
 

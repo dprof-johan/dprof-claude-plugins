@@ -2,16 +2,16 @@
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "dprof-claude-plugins",
   "owner": {
-    "name": "dprof-johan"
+    "name": "Johan Hedlund"
   },
-  "description": "dprof-johan's Claude Code plugins — a small collection, starting with dev-chronicler.",
+  "description": "Johan Hedlund's Claude Code plugins — a small collection, starting with dev-chronicler.",
   "plugins": [
     {
       "name": "dev-chronicler",
       "source": "./plugins/dev-chronicler",
       "description": "Keeps a human-readable chronicle of decisions and actions, and feeds it back to fresh agents as handover memory.",
       "version": "0.2.2",
-      "author": { "name": "dprof-johan" },
+      "author": { "name": "Johan Hedlund" },
       "homepage": "https://github.com/dprof-johan/dprof-claude-plugins",
       "repository": "https://github.com/dprof-johan/dprof-claude-plugins",
       "license": "MIT",

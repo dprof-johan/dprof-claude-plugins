@@ -1,7 +1,7 @@
 # dprof-claude-plugins
 
 A small collection of [Claude Code](https://claude.com/claude-code) plugins by
-dprof-johan, published as a single marketplace.
+Johan Hedlund, published as a single marketplace.
 
 ## Install
 
