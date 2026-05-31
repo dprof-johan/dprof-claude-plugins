@@ -477,7 +477,13 @@ function scanEntry(file, sub) {
     const h = line.match(/^##\s+(.*\S)\s*$/);
     if (h) headings.add(h[1].trim());
 
-    if (line.includes("[[")) {
+    // Strip inline-code spans before checking link/wikilink syntax, so code like
+    // `Callable[[Entity], None]` or pandas `df[[col]]` isn't mistaken for a link.
+    const scan = line.replace(/`[^`]*`/g, "");
+
+    // A real Obsidian wikilink is a complete `[[...]]` token (not just a stray
+    // `[[`, which appears in nested generics/indexers).
+    if (/\[\[[^\]\n]+\]\]/.test(scan)) {
       issues.push({ level: "error", line: ln, message: "Obsidian wikilink — use a relative Markdown link instead" });
     }
 
@@ -499,7 +505,7 @@ function scanEntry(file, sub) {
 
     const re = /\[[^\]]*\]\(([^)]+)\)/g;
     let m;
-    while ((m = re.exec(line))) checkLink(file, m[1], ln, issues);
+    while ((m = re.exec(scan))) checkLink(file, m[1], ln, issues);
   });
 
   for (const s of REQUIRED_SECTIONS[sub] || []) {

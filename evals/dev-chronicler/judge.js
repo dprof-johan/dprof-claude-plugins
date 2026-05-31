@@ -176,7 +176,7 @@ async function callApi(prompt, model) {
 // the candidate's intrinsic structure so golden > degraded, without a model.
 function callMock(_prompt, candidate) {
   const text = candidate.text;
-  const hasWikilink = text.includes("[[");
+  const hasWikilink = /\[\[[^\]\n]+\]\]/.test(text);
   const hasPlaceholder = /_What is the situation|_The choice we made|_Each rejected option|_Relative Markdown links/.test(text);
   const crossLinked = text.includes("](../actions/") && text.includes("](../decisions/");
   const handoverRefs = candidate.counts.handovers > 0 && /handovers\/[\s\S]*?\]\(\.\.\//.test(text);
