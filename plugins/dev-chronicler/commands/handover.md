@@ -1,7 +1,7 @@
 ---
 description: Write a timestamped handover snapshot of where the project stands, for the next agent.
 argument-hint: "[focus / milestone label]"
-model: sonnet
+model: inherit
 ---
 
 Use the **dev-chronicler** skill, `handover` procedure, to write a point-in-time

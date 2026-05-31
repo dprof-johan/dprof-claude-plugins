@@ -1,7 +1,7 @@
 ---
 description: Review decisions not yet Accepted (human-confirmed) and let the user confirm each.
 argument-hint: "[NNNN to accept directly]"
-model: sonnet
+model: inherit
 ---
 
 Use the **dev-chronicler** skill, `accept` procedure.
