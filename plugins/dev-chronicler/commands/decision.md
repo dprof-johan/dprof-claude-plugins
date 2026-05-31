@@ -1,7 +1,7 @@
 ---
 description: Record (or, in propose mode, draft) an ADR for a non-trivial decision.
 argument-hint: "[the decision to capture]"
-model: opus
+model: inherit
 ---
 
 Use the **dev-chronicler** skill, `decision` procedure, to capture a non-trivial

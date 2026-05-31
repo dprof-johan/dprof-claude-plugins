@@ -1,7 +1,7 @@
 ---
 description: Check the chronicle's health — broken links, leftover wikilinks, unfilled placeholders, missing sections.
 argument-hint: ""
-model: sonnet
+model: inherit
 ---
 
 Use the **dev-chronicler** skill, `doctor` procedure, to check the chronicle's

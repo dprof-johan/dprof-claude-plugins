@@ -1,7 +1,7 @@
 ---
 description: Bring an older chronicle up to the current format (drop index blocks & Proposed/Accepted status, convert wikilinks to relative links).
 argument-hint: ""
-model: haiku
+model: inherit
 ---
 
 Use the **dev-chronicler** skill, `migrate` procedure, to upgrade a chronicle

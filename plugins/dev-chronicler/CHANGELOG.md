@@ -4,6 +4,17 @@ All notable changes to **dev-chronicler** are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
 the `version` field in `.claude-plugin/plugin.json`.
 
+## 0.4.4
+
+### Fixed
+- **Commands now use `model: inherit`** instead of pinned tiers. The pins
+  (haiku/opus/sonnet) forced a model/context tier that isn't always authorized —
+  e.g. a `sonnet`-pinned command in a 1M-context session resolved to Sonnet-1M
+  and demanded usage credits, failing with *"Usage credits required for 1M
+  context."* Commands now run on the active session model, so there are no tier
+  surprises. (Forcing a capable model is no longer needed for correctness — the
+  `PreToolUse` guard from 0.4.3 enforces engine use regardless of model.)
+
 ## 0.4.3
 
 ### Fixed

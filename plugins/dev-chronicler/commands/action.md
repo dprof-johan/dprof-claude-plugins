@@ -1,7 +1,7 @@
 ---
 description: Record an action-log entry for the work episode that just completed.
 argument-hint: "[short description of the episode]"
-model: opus
+model: inherit
 ---
 
 Use the **dev-chronicler** skill, `action` procedure, to record a build-journal
