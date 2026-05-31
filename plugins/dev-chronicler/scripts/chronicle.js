@@ -7,9 +7,13 @@
  *
  * Subcommands:
  *   init      --root <name>                         scaffold the chronicle in a project
- *   allocate  <decision|action> --slug <s> [--title "<t>"] [--root <name>]
- *                                                   atomically reserve the next NNNN and
- *                                                   create a skeleton entry; prints its path
+ *   allocate  decision --slug <s> [--title "<t>"] [--root <name>]
+ *   allocate  action   --type <feat|fix|docs|refactor|test|chore> --slug <s> [--title "<t>"]
+ *                                                   atomically reserve the next NNNN and create a
+ *                                                   skeleton entry; prints its path. Actions encode
+ *                                                   the type in the filename (NNNN-<type>-slug.md).
+ *   pending   [--root <name>] [--json]              list decisions not yet Accepted (human-confirmed)
+ *   accept    <NNNN> [--root <name>]                mark a decision Accepted (human-confirmed)
  *   handover  --slug <s> [--title "<t>"] [--root <name>]
  *                                                   create a timestamped handover from a
  *                                                   skeleton; prints its path
@@ -32,6 +36,14 @@ const path = require("path");
 const KIND_DIR = { decision: "decisions", action: "actions", handover: "handovers" };
 const FOLDERS = Object.values(KIND_DIR);
 
+// Short, fixed set of action episode types (Conventional Commits — kept small to
+// limit type-selection friction). Encoded into the action filename: NNNN-<type>-slug.
+const ACTION_TYPES = ["feat", "fix", "docs", "refactor", "test", "chore"];
+const ACTION_TYPE_RE = /^\d{4}-(feat|fix|docs|refactor|test|chore)-.+\.md$/;
+
+// Decision human-confirmation statuses (a separate axis from the supersede marker).
+const DECISION_STATUSES = ["Proposed", "Accepted"];
+
 // Required section headings per entry kind — used by `doctor`.
 const REQUIRED_SECTIONS = {
   decisions: ["Context", "Decision", "Alternatives considered", "Consequences"],
@@ -43,9 +55,13 @@ const REQUIRED_SECTIONS = {
 const PLACEHOLDER_MARKERS = [
   "_What is the situation",
   "_The choice we made",
-  "_Each rejected option",
+  "_Each serious option",
   "_What this commits us",
   "_Relative Markdown links",
+  "_What changed and",
+  "_Concrete result",
+  "_Exact, runnable commands",
+  "_Why this mattered",
 ];
 
 // ---------- arg parsing ----------
@@ -163,6 +179,17 @@ function maxNumber(dir) {
   return max;
 }
 
+// Read a decision's **Status:** value (Proposed / Accepted / ...), or null.
+function statusOf(file) {
+  try {
+    const m = fs.readFileSync(file, "utf8").match(/^\*\*Status:\*\*\s*(.+?)\s*$/m);
+    if (m) return m[1].trim();
+  } catch (_) {
+    /* ignore */
+  }
+  return null;
+}
+
 // ---------- skeletons ----------
 
 function skeleton(kind, num, title) {
@@ -171,27 +198,28 @@ function skeleton(kind, num, title) {
     return [
       `# ${nnnn} — ${title}`,
       "",
+      "**Status:** Proposed",
       `**Date:** ${today()}`,
       "",
       "## Context",
       "",
-      "_What is the situation, what is the constraint, what triggered this decision._",
+      "_What is the situation — the forces at play (technical, product, constraints) and what triggered this decision._",
       "",
       "## Decision",
       "",
-      "_The choice we made, stated plainly._",
+      "_The choice we made, stated plainly, with its rationale: \"we will X **because** Y\". The because is required._",
       "",
       "## Alternatives considered",
       "",
-      "_Each rejected option, with the reason we rejected it._",
+      "_Each serious option weighed, with its pros/cons and why it was rejected — not just a bare name._",
       "",
       "## Consequences",
       "",
-      "_What this commits us to. What we now can't do. What we might regret._",
+      "_What this commits us to — including the negative and neutral consequences and follow-on obligations, not just the upsides._",
       "",
       "## Related",
       "",
-      "_Relative Markdown links — another decision: [NNNN — Title](NNNN-slug.md); an action: [actions/NNNN — Title](../actions/NNNN-slug.md)._",
+      "_Relative Markdown links — another decision: [NNNN — Title](NNNN-slug.md); an action: [actions/NNNN-type — Title](../actions/NNNN-type-slug.md)._",
       "",
     ].join("\n");
   }
@@ -202,15 +230,16 @@ function skeleton(kind, num, title) {
     `**Date:** ${today()}`,
     "",
     "## What I did",
-    "- ",
+    "- _What changed and **why** — the intent and the change, not keystrokes._",
     "",
     "## Outcome",
-    "- ",
+    "- _Concrete result: numbers, pass/fail, before→after. Note what failed or you ruled out._",
     "",
     "## Commands",
+    "_Exact, runnable commands so the result can be reproduced._",
     "",
     "## Notes / related",
-    "- _Relative Markdown links — a decision: [decisions/NNNN — Title](../decisions/NNNN-slug.md); another action: [NNNN — Title](NNNN-slug.md)._",
+    "- _Why this mattered / next step; link a decision: [decisions/NNNN — Title](../decisions/NNNN-slug.md)._",
     "",
   ].join("\n");
 }
@@ -253,6 +282,15 @@ function cmdAllocate(positional, flags) {
         `(no ${rootName(flags)}/.chronicler.json). Run /dev-chronicler:init first.`
     );
   }
+  // Actions carry a fixed episode type in their filename: NNNN-<type>-slug.md.
+  let typeSeg = "";
+  if (kind === "action") {
+    const t = flags.type && flags.type !== true ? String(flags.type).toLowerCase() : "";
+    if (!ACTION_TYPES.includes(t)) {
+      fail(`allocate action requires --type <${ACTION_TYPES.join("|")}>`);
+    }
+    typeSeg = t + "-";
+  }
   const dir = path.join(rootDir(flags), KIND_DIR[kind]);
   fs.mkdirSync(dir, { recursive: true });
   const slug = slugify(flags.slug);
@@ -263,7 +301,7 @@ function cmdAllocate(positional, flags) {
   for (let attempt = 0; attempt < 50; attempt++) {
     const num = maxNumber(dir) + 1;
     const nnnn = String(num).padStart(4, "0");
-    const name = `${nnnn}-${slug}.md`;
+    const name = `${nnnn}-${typeSeg}${slug}.md`;
     const full = path.join(dir, name);
     let fd;
     try {
@@ -322,6 +360,52 @@ function cmdStatus(_positional, flags) {
   process.stdout.write(JSON.stringify(out, null, 2) + "\n");
 }
 
+// Decisions not yet human-confirmed (Status !== Accepted). "Accepted" means a
+// human has confirmed the record is correct — it is never set automatically.
+function pendingDecisions(flags) {
+  const dir = path.join(rootDir(flags), KIND_DIR.decision);
+  return listEntries(dir)
+    .map((f) => ({ file: f, title: firstHeading(path.join(dir, f)) || f, status: statusOf(path.join(dir, f)) || "Proposed" }))
+    .filter((d) => d.status !== "Accepted");
+}
+
+function cmdPending(_positional, flags) {
+  if (!isActive(flags)) fail("dev-chronicler is not initialised in this project.");
+  const pending = pendingDecisions(flags);
+  if (flags.json) {
+    process.stdout.write(JSON.stringify({ pending }, null, 2) + "\n");
+    return;
+  }
+  if (!pending.length) {
+    process.stdout.write("pending: all decisions are Accepted.\n");
+    return;
+  }
+  process.stdout.write(`pending: ${pending.length} decision(s) awaiting acceptance:\n`);
+  for (const d of pending) process.stdout.write(`  ${d.file}  [${d.status}]  ${d.title}\n`);
+}
+
+// Mark a decision Accepted (human-confirmed). Mechanical edit so the Status line
+// can't be mistyped. Takes the NNNN number (or a filename).
+function cmdAccept(positional, flags) {
+  if (!isActive(flags)) fail("dev-chronicler is not initialised in this project.");
+  const which = positional[0];
+  if (!which) fail("accept requires a decision number, e.g. `accept 0003`");
+  const dir = path.join(rootDir(flags), KIND_DIR.decision);
+  const nnnn = String(which).replace(/\D/g, "").padStart(4, "0");
+  const file = listEntries(dir).find((f) => f.startsWith(nnnn + "-") || f === which);
+  if (!file) fail(`no decision matching "${which}" in ${rootName(flags)}/decisions/`);
+  const full = path.join(dir, file);
+  let text = fs.readFileSync(full, "utf8");
+  if (/^\*\*Status:\*\*/m.test(text)) {
+    text = text.replace(/^\*\*Status:\*\*.*$/m, "**Status:** Accepted");
+  } else {
+    // No status line — insert one right after the H1 title.
+    text = text.replace(/^(#\s+.*\n)/, `$1\n**Status:** Accepted\n`);
+  }
+  fs.writeFileSync(full, text);
+  process.stdout.write(`accepted ${KIND_DIR.decision}/${file}\n`);
+}
+
 function cmdInit(_positional, flags) {
   const root = rootName(flags);
   const base = rootDir(flags);
@@ -353,14 +437,15 @@ function writeIfAbsent(file, content) {
 function decisionsReadme() {
   return `# Decisions
 
-Lightweight ADRs (Architecture Decision Records). One decision per file,
-numbered sequentially. Captures **why** a path was chosen.
+Lightweight ADRs (Architecture Decision Records). One decision per file (kept
+short — a page or so), numbered sequentially. Captures **why** a path was chosen.
 
 ## Format
 
 \`\`\`
 # NNNN — Title
 
+**Status:** Proposed | Accepted
 **Date:** YYYY-MM-DD
 
 ## Context
@@ -372,15 +457,23 @@ numbered sequentially. Captures **why** a path was chosen.
 
 ## Conventions
 
-- A decision is in force simply by existing — there is no Proposed/Accepted
-  status to maintain.
-- Err on too much detail — easier to trim later than to reconstruct.
-- Cross-link with **standard relative Markdown links** (they render on GitHub
-  and in IDEs): \`[NNNN — Title](NNNN-slug.md)\` for another decision,
-  \`[actions/NNNN — Title](../actions/NNNN-slug.md)\` for an action.
-- When a decision is reversed, **don't delete it.** Add a
-  \`**Superseded by:** [NNNN — Title](NNNN-slug.md)\` line near the top, pointing
-  at its replacement. The history is the value.
+- **One decision per entry**, kept short — large records go stale and unread
+  (Nygard; Fowler).
+- **Decision states a rationale**: "we will X **because** Y" — justification is
+  not optional (MADR).
+- **Alternatives** = each serious option with its pros/cons and why it was
+  rejected, not a bare list of names (Fowler; MADR).
+- **Consequences** must include the negatives/neutral and follow-on obligations,
+  not just the upsides (Nygard).
+- Cross-link with **relative Markdown links** (they render on GitHub and IDEs):
+  \`[NNNN — Title](NNNN-slug.md)\`; an action: \`[actions/NNNN-type — Title](../actions/NNNN-type-slug.md)\`.
+- **Supersede, don't delete.** When a decision is reversed, add a
+  \`**Superseded by:** [NNNN — Title](NNNN-slug.md)\` line near the top (Nygard).
+- **Status / acceptance.** New decisions start **Proposed**. A *human* marks one
+  **Accepted** once they've confirmed it's correct — the agent never waits for
+  that. Review pending ones any time with \`/dev-chronicler:accept\`.
+
+See the project README's "Principles & sources" for the citations behind these.
 `;
 }
 
@@ -388,7 +481,7 @@ function actionsReadme() {
   return `# Actions
 
 A chronological build journal. One file per meaningful work *episode*.
-Captures **what** was actually done.
+Captures **what** was actually done. Files are named \`NNNN-<type>-slug.md\`.
 
 ## Format
 
@@ -397,20 +490,24 @@ Captures **what** was actually done.
 
 **Date:** YYYY-MM-DD
 
-## What I did
-## Outcome
-## Commands
-## Notes / related
+## What I did      (what changed and WHY — not keystrokes)
+## Outcome         (concrete result + numbers; what failed / was ruled out)
+## Commands        (exact, runnable commands — reproducibility)
+## Notes / related (why it mattered / next step; links)
 \`\`\`
 
-## When to add an entry
+## Conventions
 
-Add when something *happened* worth remembering as a discrete episode:
-installing a tool, running a meaningful command, resolving a class of issues,
-pushing/validating CI, hitting unexpected behaviour and handling it.
+- **Type prefix** in the filename — one of \`feat | fix | docs | refactor | test |
+  chore\` (Conventional Commits), so entries are scannable and machine-groupable.
+- **Right altitude**: one entry per work *episode*, written while it's fresh — not
+  per file-edit (\`git log\` covers those), not per keystroke (engineering daybook).
+- **Concrete outcomes**: numbers, pass/fail, before→after — paired with the
+  command/evidence that produced them (lab-notebook reproducibility standard).
+- **Negative results are first-class**: record what failed or you ruled out — it
+  stops the next reader repeating a dead end (SRE blameless postmortems).
 
-**Don't** add an entry for every file edit — \`git log\` already captures those.
-One entry should answer "what happened in this work session?" for a later reader.
+See the project README's "Principles & sources" for the citations behind these.
 `;
 }
 
@@ -453,6 +550,22 @@ function checkLink(file, target, line, issues) {
   if (!fs.existsSync(resolved)) {
     issues.push({ level: "error", line, message: `broken link: ${target}` });
   }
+}
+
+// Return the meaningful (non-placeholder, non-bullet, non-fence) content of a
+// `## heading` section, or "" if it's effectively empty.
+function sectionBody(text, heading) {
+  const re = new RegExp("^##\\s+" + heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*$", "m");
+  const m = re.exec(text);
+  if (!m) return "";
+  const after = text.slice(m.index + m[0].length);
+  const next = after.search(/^##\s+/m);
+  const body = next === -1 ? after : after.slice(0, next);
+  return body
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && l !== "-" && !l.startsWith("_") && !l.startsWith("```"))
+    .join("");
 }
 
 function scanEntry(file, sub) {
@@ -511,6 +624,18 @@ function scanEntry(file, sub) {
   for (const s of REQUIRED_SECTIONS[sub] || []) {
     if (!headings.has(s)) issues.push({ level: "warning", line: 0, message: `missing section: ## ${s}` });
   }
+
+  // Cheap mechanical quality checks (warnings — never fail the build).
+  const base = path.basename(file);
+  if (sub === "actions" && !ACTION_TYPE_RE.test(base)) {
+    issues.push({ level: "warning", line: 0, message: `action filename should be NNNN-<type>-slug (type: ${ACTION_TYPES.join("|")})` });
+  }
+  if (sub === "decisions" && !/^\*\*Status:\*\*/m.test(text)) {
+    issues.push({ level: "warning", line: 0, message: "decision is missing a **Status:** line (Proposed or Accepted)" });
+  }
+  if (sub === "actions" && !sectionBody(text, "Commands")) {
+    issues.push({ level: "warning", line: 0, message: "Commands section is empty — record the exact commands run (reproducibility)" });
+  }
   return issues;
 }
 
@@ -550,6 +675,9 @@ function cmdDoctor(_positional, flags) {
 function migrateFile(file, sub, base, dryRun) {
   const orig = fs.readFileSync(file, "utf8");
   let text = orig;
+  // Only numbered entries get the status/wikilink rewrites; folder READMEs (which
+  // contain example syntax in their format blocks) get only index-block removal.
+  const isEntry = /^\d{4}-.*\.md$/.test(path.basename(file));
 
   // 1. Remove generated index blocks (with an optional "## Index" heading).
   text = text.replace(
@@ -558,14 +686,22 @@ function migrateFile(file, sub, base, dryRun) {
   );
   text = text.replace(/<!-- chronicle:index:start -->[\s\S]*?<!-- chronicle:index:end -->[ \t]*\n?/g, "");
 
-  // 2. Status lines: drop Proposed/Accepted; convert Superseded/Reverted.
+  if (!isEntry) {
+    text = text.replace(/\n{3,}/g, "\n\n");
+    if (text === orig) return false;
+    if (!dryRun) fs.writeFileSync(file, text);
+    return true;
+  }
+
+  // 2. Status lines: keep Proposed/Accepted (valid); convert an old
+  //    "Status: Superseded by NNNN" into the standalone Superseded-by marker.
   text = text
     .split(/\r?\n/)
     .map((line) => {
       const m = line.match(/^\*\*Status:\*\*\s*(.+?)\s*$/);
       if (!m) return line;
       const val = m[1].trim();
-      if (/^(Proposed|Accepted)$/i.test(val)) return null; // drop the line entirely
+      if (/^(Proposed|Accepted)$/i.test(val)) return line; // valid status — keep
       const sm = val.match(/^Superseded by\s+#?(\d{3,4})/i);
       if (sm) {
         const num = sm[1].padStart(4, "0");
@@ -658,8 +794,12 @@ function main() {
       return cmdDoctor(positional, flags);
     case "migrate":
       return cmdMigrate(positional, flags);
+    case "pending":
+      return cmdPending(positional, flags);
+    case "accept":
+      return cmdAccept(positional, flags);
     default:
-      fail(`unknown subcommand "${cmd || ""}". Expected init|allocate|handover|status|doctor|migrate.`);
+      fail(`unknown subcommand "${cmd || ""}". Expected init|allocate|handover|status|doctor|migrate|pending|accept.`);
   }
 }
 

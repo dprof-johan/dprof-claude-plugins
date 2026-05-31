@@ -26,7 +26,7 @@ test("session_start is silent on an un-initialised project", () => {
 test("session_start injects mode, recent actions, and decisions when active", () => {
   const proj = mkProject();
   engine(["init"], { project: proj });
-  engine(["allocate", "action", "--slug", "scaffolded", "--title", "Scaffolded toolchain"], { project: proj });
+  engine(["allocate", "action", "--type", "chore", "--slug", "scaffolded", "--title", "Scaffolded toolchain"], { project: proj });
   engine(["allocate", "decision", "--slug", "evals", "--title", "Evals platform"], { project: proj });
 
   const r = run(SESSION_START, ["--root", "dev-chronicler", "--mode", "auto"], { project: proj });
@@ -61,7 +61,7 @@ test("session_start flags a superseded decision in the list", () => {
 
   const r = run(SESSION_START, ["--root", "dev-chronicler", "--mode", "propose"], { project: proj });
   const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
-  assert.match(ctx, /Use SQLite.*— superseded by \[0002 — Use Postgres\]\(0002-use-postgres\.md\)/);
+  assert.match(ctx, /Use SQLite.*superseded by \[0002 — Use Postgres\]\(0002-use-postgres\.md\)/);
   assert.doesNotMatch(ctx, /Use Postgres.*superseded/, "the live decision is not flagged");
 });
 
@@ -146,7 +146,7 @@ test("stop_nudge stays silent when an action was logged recently", () => {
   const data = mkDataDir();
   backdate(path.join(proj, "dev-chronicler", ".chronicler.json"), 2 * HOUR);
   // A freshly written action entry → agent is clearly logging.
-  engine(["allocate", "action", "--slug", "just-logged"], { project: proj });
+  engine(["allocate", "action", "--type", "feat", "--slug", "just-logged"], { project: proj });
 
   const r = run(STOP_NUDGE, ["--root", "dev-chronicler", "--nudge", "on"], {
     project: proj,

@@ -57,8 +57,9 @@ All commands are namespaced and tab-completable as `/dev-chronicler:<name>`.
 | `/dev-chronicler:decision` | Record an ADR |
 | `/dev-chronicler:handover` | Create a timestamped handover snapshot |
 | `/dev-chronicler:readme` | Create/refresh a localized directory README |
-| `/dev-chronicler:doctor` | Check chronicle health (links, wikilinks, placeholders, sections) |
+| `/dev-chronicler:doctor` | Check chronicle health (links, wikilinks, placeholders, sections, types) |
 | `/dev-chronicler:migrate` | Upgrade a chronicle made by an older plugin version |
+| `/dev-chronicler:accept` | Review decisions and let the human mark them Accepted (confirmed) |
 
 ## Configuration
 
@@ -77,16 +78,51 @@ Set when the plugin is enabled (stored per-user); all optional:
   entry numbers atomically — so numbers never collide, even with concurrent
   subagents. There's no index to maintain: the `SessionStart` hook derives the
   recent-entries list live from the files, so it can't drift.
-- The engine also offers `doctor` (validate links/wikilinks/placeholders/sections)
-  and `migrate` (upgrade a chronicle made by an older version).
+- The engine also offers `doctor` (validate links/wikilinks/placeholders/sections/
+  types), `migrate` (upgrade an older chronicle), and `pending`/`accept`.
 - Cross-links are **standard relative Markdown links** so they render on GitHub
-  and in IDEs.
+  and in IDEs. Action files are named `NNNN-<type>-slug.md`.
+- **Decision acceptance**: new ADRs are `Proposed`; the *human* marks them
+  `Accepted` (confirmed correct) via `/dev-chronicler:accept` — the agent writes
+  them and keeps working, never blocking on acceptance. `SessionStart` reminds it
+  when some are pending.
 - Two **hooks**: `SessionStart` (inject handover memory) and `Stop` (an opt-in,
   heavily rate-limited reminder to log).
 
 The `chronicle_root` (and the legacy `CHRONICLE_ROOT` env var) are treated as
 trusted configuration — they're joined to the project path without sanitising,
 so don't point them at untrusted input.
+
+## Principles & sources
+
+The quality bar the skill/templates enforce isn't invented — it's drawn from
+established, primarily-primary published guidance. Each rule below links to its
+source. (Caveat: these are professional **conventions and expert opinion**, not
+measured empirical evidence; the lab-notebook/SRE rules are adapted by analogy.)
+
+**Decision records (ADRs)**
+
+- One decision per record, kept short — *"Large documents are never kept up to
+  date."* — Michael Nygard, [Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) (2011, primary) · Martin Fowler, [Architecture Decision Record](https://martinfowler.com/bliki/ArchitectureDecisionRecord.html) (primary).
+- The Decision states a **rationale** ("…because…"); record a decision when it's a
+  *justified design choice tied to a requirement* — [MADR](https://adr.github.io/madr/) (primary, v4.0.0).
+- **Alternatives** list each serious option with pros/cons + why rejected — Fowler; MADR.
+- **Consequences** include the negatives/neutral, not just upsides — Nygard.
+- **Supersede, don't delete** a reversed decision — Nygard.
+
+**Action / build-journal entries**
+
+- Lead with a **typed prefix** (feat/fix/docs/refactor/test/chore) — [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) (primary).
+- Structure as actions → **impact/outcome** → root cause → next step, written
+  **blamelessly**, recording **negative results** — [Google SRE Book, *Postmortem Culture*](https://sre.google/sre-book/postmortem-culture/) (primary).
+- Write **contemporaneously**, at episode altitude (what you did + learned) — *The
+  Pragmatic Programmer*, "Engineering Daybook" (primary) · [Ten Simple Rules for a Lab Notebook](https://pmc.ncbi.nlm.nih.gov/articles/PMC4565690/) (peer-reviewed).
+- **Reproducibility**: record how every result was produced (exact commands) —
+  Ten Simple Rules; [Sandve et al. 2013](https://pmc.ncbi.nlm.nih.gov/articles/PMC3812051/) (peer-reviewed).
+- **Curate for humans**, link rather than dump raw diffs — [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Chris Beams, [How to Write a Git Commit Message](https://cbea.ms/git-commit/) (convention blogs).
+
+These were gathered and adversarially fact-checked via the repo's own
+[deep-research workflow](../../evals/dev-chronicler); the `evals/` golden chronicle is the worked example of the bar in practice.
 
 ## Requirements
 
@@ -123,7 +159,7 @@ See [`CHANGELOG.md`](CHANGELOG.md) for the per-version history.
 
 ## Status
 
-Early (`0.3.x`). The `Stop` nudge is the most experimental piece; if it ever
+Early (`0.4.x`). The `Stop` nudge is the most experimental piece; if it ever
 feels noisy, set `stop_nudge` to `off`.
 
 ## Layout
@@ -132,7 +168,7 @@ feels noisy, set `stop_nudge` to `off`.
 plugins/dev-chronicler/
 ├── .claude-plugin/plugin.json   # manifest + userConfig
 ├── skills/dev-chronicler/SKILL.md  # the format spec, discipline, engine usage
-├── commands/                    # init, action, decision, handover, readme, doctor, migrate
+├── commands/                    # init, action, decision, handover, readme, doctor, migrate, accept
 ├── hooks/hooks.json             # SessionStart + Stop wiring
 ├── scripts/chronicle.js         # the engine (numbering + doctor + migrate)
 ├── scripts/session_start.js     # SessionStart hook

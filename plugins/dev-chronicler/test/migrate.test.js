@@ -47,7 +47,7 @@ test("migrate --dry-run lists files without writing", () => {
   assert.equal(read(path.join(decisionsDir(proj), "0001-use-sqlite.md")), before, "dry-run left the file untouched");
 });
 
-test("migrate drops Proposed/Accepted status and converts Superseded into a link", () => {
+test("migrate keeps Proposed/Accepted status and converts old Superseded status into a marker", () => {
   const proj = mkProject();
   seedOldChronicle(proj);
   engine(["migrate"], { project: proj });
@@ -55,8 +55,9 @@ test("migrate drops Proposed/Accepted status and converts Superseded into a link
   const d1 = read(path.join(decisionsDir(proj), "0001-use-sqlite.md"));
   const d2 = read(path.join(decisionsDir(proj), "0002-use-postgres.md"));
 
-  assert.doesNotMatch(d2, /\*\*Status:\*\*/, "Accepted status line removed");
+  assert.match(d2, /^\*\*Status:\*\* Accepted$/m, "valid status line is kept");
   assert.match(d1, /\*\*Superseded by:\*\* \[0002 — Use Postgres\]\(0002-use-postgres\.md\)/);
+  assert.doesNotMatch(d1, /\*\*Status:\*\* Superseded/, "old 'Status: Superseded by' converted away");
 });
 
 test("migrate converts wikilinks to relative Markdown links", () => {

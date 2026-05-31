@@ -4,6 +4,32 @@ All notable changes to **dev-chronicler** are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
 the `version` field in `.claude-plugin/plugin.json`.
 
+## 0.4.0
+
+Applies findings from a cited review of decision-record and engineering-log
+practice (Nygard, Fowler, MADR, Conventional Commits, Google SRE, the Pragmatic
+Programmer, lab-notebook reproducibility rules). See the README "Principles &
+sources" section.
+
+### Added
+- **Action episode types.** `allocate action` now requires `--type`
+  (`feat|fix|docs|refactor|test|chore`, Conventional Commits) and encodes it in
+  the filename: `NNNN-<type>-slug.md`.
+- **Decision acceptance.** New ADRs start `**Status:** Proposed`. `pending` lists
+  un-accepted decisions and `accept <NNNN>` (and `/dev-chronicler:accept`) lets a
+  *human* mark one `Accepted` (confirmed correct). The agent never blocks on this;
+  `SessionStart` reminds it when decisions are pending.
+- Three cheap `doctor` checks (warnings): action filename has a valid type,
+  decision has a `**Status:**` line, action `Commands` section is non-empty.
+
+### Changed
+- Tightened the decision skeleton/guidance: a required "because" rationale,
+  alternatives with pros/cons + rejection reason, consequences that include the
+  negatives. Tightened the action skeleton: what-&-why (not keystrokes), concrete
+  outcomes incl. negative results, exact reproducible commands, episode altitude.
+- `migrate` now **keeps** `Proposed`/`Accepted` status lines (only converts the
+  old `Status: Superseded by NNNN` into a marker).
+
 ## 0.3.1
 
 ### Fixed

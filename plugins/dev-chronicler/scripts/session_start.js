@@ -67,6 +67,14 @@ function supersededBy(file) {
   return null;
 }
 
+function statusOf(file) {
+  try {
+    const m = fs.readFileSync(file, "utf8").match(/^\*\*Status:\*\*\s*(.+?)\s*$/m);
+    if (m) return m[1].trim();
+  } catch (_) {}
+  return null;
+}
+
 function emit(additionalContext) {
   process.stdout.write(
     JSON.stringify({
@@ -133,18 +141,31 @@ function main() {
     );
   }
 
-  // Decisions (pointers; superseded ones flagged so a fresh agent doesn't
-  // follow a reversed decision).
+  // Decisions (pointers; status shown; superseded ones flagged so a fresh agent
+  // doesn't follow a reversed decision).
   const dDir = path.join(base, "decisions");
   const decisions = listEntries(dDir);
+  let pending = 0;
   if (decisions.length) {
     const recent = decisions.slice(-RECENT_DECISIONS);
     const lines = recent.map((f) => {
       const sup = supersededBy(path.join(dDir, f));
-      return `- [${firstHeading(path.join(dDir, f)) || f}](${root}/decisions/${f})${sup ? ` — superseded by ${sup}` : ""}`;
+      const st = statusOf(path.join(dDir, f)) || "Proposed";
+      return `- [${firstHeading(path.join(dDir, f)) || f}](${root}/decisions/${f}) — ${st}${sup ? `, superseded by ${sup}` : ""}`;
     });
+    pending = decisions.filter((f) => (statusOf(path.join(dDir, f)) || "Proposed") !== "Accepted").length;
     out.push(
       `## Decisions (${decisions.length} total, showing last ${recent.length})\n\n${lines.join("\n")}`
+    );
+  }
+
+  // Nudge the agent to periodically offer the human a chance to confirm decisions
+  // (Accepted = human-verified-correct). The agent should NOT wait on this.
+  if (pending > 0) {
+    out.push(
+      `## Decision acceptance\n\n${pending} decision(s) are not yet **Accepted** (human-confirmed). ` +
+        `At a natural pause, consider listing them (\`/dev-chronicler:accept\`) and asking the user to confirm ` +
+        `each — but don't block on it; keep working.`
     );
   }
 
