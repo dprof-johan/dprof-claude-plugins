@@ -5,7 +5,8 @@
   "scripts": {
     "eval:structural": "node evals/dev-chronicler/structural-eval.js",
     "eval:judge": "node evals/dev-chronicler/judge.js",
-    "eval:test": "node --test evals/dev-chronicler/structural.test.js evals/dev-chronicler/judge.test.js"
+    "eval:run": "node evals/dev-chronicler/runner.js",
+    "eval:test": "node --test evals/dev-chronicler/structural.test.js evals/dev-chronicler/judge.test.js evals/dev-chronicler/runner.test.js"
   },
   "license": "MIT"
 }
