@@ -1,46 +1,32 @@
 {
-  "description": "Scripted prompt sequence for a future live eval. Fed in order to a headless `claude -p` session that has the dev-chronicler plugin loaded and a fresh copy of ../fixture/ as the working tree. Running it should produce a chronicle resembling ../golden/. Phase 1 (structural) does not execute these yet — they document intent and seed the live runner to come.",
+  "description": "Extension-session prompts for the live runner. The runner copies ../seed (the base RPG + its existing chronicle) into a temp dir and feeds these to a headless `claude -p` with the dev-chronicler plugin loaded and decision_log_mode=auto. They drive one tiny, fully-specified code extension (a sword that buffs attack) and chronicle it, which should produce entries resembling the delta in ../golden (ADR 0003, actions 0004-0005, an updated rpg/README.md, and a new handover). Prompts are deliberately specific to keep variance low.",
   "decision_log_mode": "auto",
+  "seed": "../seed",
   "steps": [
     {
-      "id": "init",
-      "note": "Scaffold the chronicle.",
-      "prompt": "/dev-chronicler:init"
+      "id": "decision-item-effects",
+      "note": "ADR for how to model item effects (cross-links the existing hardcoded-content ADR).",
+      "prompt": "We're extending the RPG with a sword that raises the hero's attack. Before coding, decide how to model item effects: extend the single `Item` dataclass with optional numeric fields (`heal`, `attack_bonus`) rather than item subclasses or per-item callbacks, staying consistent with the existing hardcoded-content decision. Record this as an ADR. /dev-chronicler:decision modelling item effects"
     },
     {
-      "id": "decision-language",
-      "note": "First ADR: stdlib-only Python.",
-      "prompt": "We're building a tiny text RPG as a teaching demo: it must run with one command and zero setup on any OS. Record the decision to use Python 3 standard library only (no third-party deps, no build step), run via `python -m rpg`. /dev-chronicler:decision language and dependencies"
+      "id": "implement-sword",
+      "note": "Smallest code change + an action entry.",
+      "prompt": "Implement it with the smallest change: add `attack_bonus: int = 0` to `Item` in rpg/engine.py; add a `sword` (attack_bonus=2) to the hall in rpg/content.py (the hall keeps its goblin); in rpg/main.py make the `use` command apply `hero.attack += item.attack_bonus` alongside the existing heal. Verify with: printf 'go north\\ntake\\nuse sword\\nattack\\nattack\\nquit\\n' | python -m rpg  (the hero's attack should rise to 5 and you should see YOU WIN). Then record an action. /dev-chronicler:action add a sword that buffs attack"
     },
     {
-      "id": "decision-hardcoded",
-      "note": "Second ADR: hardcode the world (cross-links the first).",
-      "prompt": "Record the decision to hardcode the two-room world in content.py via a build_world() factory rather than loading rooms from data files, for v1. Note it should be revisited if the world grows. /dev-chronicler:decision hardcoded world vs data-driven content"
-    },
-    {
-      "id": "build-engine",
-      "note": "Do the work, then log it.",
-      "prompt": "Create the rpg/ package: an I/O-free engine.py (Entity, Item, Room dataclasses; resolve_attack with an injected roll callable) and content.py with build_world() returning (hero, rooms, start_room) — two rooms, a goblin, a potion. Then /dev-chronicler:action scaffold the engine and hardcoded world"
-    },
-    {
-      "id": "build-loop",
-      "note": "Game loop episode.",
-      "prompt": "Add main.py (the only I/O module) with a run(input_fn, output_fn, roll) command loop — look/go/take/use/attack/quit — wiring win on goblin death and lose on hero death, plus __main__.py so `python -m rpg` works. Verify a scripted playthrough reaches YOU WIN. Then /dev-chronicler:action fight loop and command parser"
-    },
-    {
-      "id": "build-tests",
-      "note": "Tests episode.",
-      "prompt": "Add tests/test_engine.py with three unittest cases (non-crit damage, crit on a high roll, world has goblin+potion) using a fake roll. Confirm `python -m unittest` is green. Then /dev-chronicler:action engine smoke tests green"
+      "id": "test-sword",
+      "note": "Pinning test + an action entry.",
+      "prompt": "Add one unittest to rpg/tests/test_engine.py that builds the world and asserts the hall's item is a sword with attack_bonus == 2. Run `python -m unittest` and confirm 4 tests pass. Then record an action. /dev-chronicler:action pin the sword's attack buff with a test"
     },
     {
       "id": "readme",
-      "note": "Localized README next to the code.",
+      "note": "Refresh the localized README.",
       "prompt": "/dev-chronicler:readme rpg"
     },
     {
       "id": "handover",
-      "note": "Snapshot for the next agent.",
-      "prompt": "/dev-chronicler:handover rpg walking skeleton complete"
+      "note": "Snapshot the extension for the next agent.",
+      "prompt": "/dev-chronicler:handover sword extension landed"
     }
   ]
 }

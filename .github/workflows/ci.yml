@@ -44,3 +44,5 @@ jobs:
         run: node --test evals/dev-chronicler/structural.test.js
       - name: LLM-judge harness self-tests (mock backend)
         run: node --test evals/dev-chronicler/judge.test.js
+      - name: Eval runner plumbing self-test (dry-run, no model)
+        run: node --test evals/dev-chronicler/runner.test.js
