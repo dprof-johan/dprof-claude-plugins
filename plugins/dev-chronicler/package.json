@@ -1,6 +1,6 @@
 {
   "name": "dev-chronicler",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Claude Code plugin: automatic decision/action/handover chronicle that doubles as agent handover memory.",
   "private": true,
   "scripts": {

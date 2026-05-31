@@ -4,6 +4,16 @@ All notable changes to **dev-chronicler** are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
 the `version` field in `.claude-plugin/plugin.json`.
 
+## 0.4.1
+
+### Fixed
+- **`init` now activates the chronicle in the current session.** The `SessionStart`
+  hook is gated on the chronicle already existing, so running `/dev-chronicler:init`
+  mid-session left that session un-primed (nothing logged until a restart). The
+  `init` command/skill now tell the agent to adopt the logging discipline
+  immediately, and the engine's init message says so — no restart needed. Future
+  sessions are still primed automatically by the hook.
+
 ## 0.4.0
 
 Applies findings from a cited review of decision-record and engineering-log

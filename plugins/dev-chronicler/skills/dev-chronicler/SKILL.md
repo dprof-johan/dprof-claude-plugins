@@ -187,6 +187,12 @@ Steps:
 
    If a `CLAUDE.md` already exists, append this section; don't clobber it.
 
+4. **Activate in this session.** The `SessionStart` hook is gated on the chronicle
+   already existing, so it primes only *future* sessions — not the one you just
+   ran `init` in. So don't tell the user to restart: continue *this* session with
+   the chronicle active, following the action/decision/handover discipline from
+   now on. (Future sessions get primed automatically by the hook.)
+
 ## Procedure: `readme` — localized directory README
 
 A first-class part of the chronicle: a `README.md` *next to the code* in a
