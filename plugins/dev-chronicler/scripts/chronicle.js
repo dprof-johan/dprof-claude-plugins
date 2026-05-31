@@ -425,7 +425,10 @@ function cmdInit(_positional, flags) {
   writeIfAbsent(path.join(base, "actions", "README.md"), actionsReadme());
   writeIfAbsent(path.join(base, "handovers", "README.md"), handoversReadme());
   writeIfAbsent(path.join(base, "README.md"), rootReadme(root));
-  process.stdout.write(`initialised ${root}/ (decisions, actions, handovers)\n`);
+  process.stdout.write(
+    `initialised ${root}/ (decisions, actions, handovers). ` +
+      `The chronicle is active now — start logging episodes and decisions this session; no restart needed.\n`
+  );
 }
 
 function writeIfAbsent(file, content) {
