@@ -176,7 +176,16 @@ Steps:
 
 1. Confirm the root folder name (default `dev-chronicler`; honour an existing
    one if the project already has decision/action logs).
-2. Run `init [--root <name>]`.
+2. **Scaffold with the engine — run exactly this** (do not `mkdir` the folders or
+   write the marker/READMEs by hand):
+
+   ```
+   node "${CLAUDE_SKILL_DIR}/../../scripts/chronicle.js" init
+   ```
+
+   (append `--root <name>` for a custom folder). This creates the folders, the
+   `.chronicler.json` marker (the gate the hooks rely on), and the README
+   scaffolding. A hand-rolled init has no marker, so the hooks never fire.
 3. Write a short **CLAUDE.md stub** into the project so the behaviour is on even
    when this skill isn't loaded. Keep it terse and point here for detail, e.g.:
 

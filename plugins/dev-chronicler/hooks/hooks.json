@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/pretool_guard.js\""
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [
