@@ -4,6 +4,14 @@ All notable changes to **dev-chronicler** are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
 the `version` field in `.claude-plugin/plugin.json`.
 
+## 0.3.1
+
+### Fixed
+- `doctor` no longer false-flags `[[` inside inline code (e.g. a
+  `Callable[[Entity], None]` type annotation or pandas `df[[col]]`) as an
+  Obsidian wikilink. It now strips inline-code spans and matches a complete
+  `[[...]]` token. Surfaced by the end-to-end eval runner on real generated output.
+
 ## 0.3.0
 
 ### Added

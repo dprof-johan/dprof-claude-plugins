@@ -80,8 +80,21 @@ function runClaudeTurn(prompt, { cwd, pluginDir, model, sessionId, skipPermissio
 }
 
 function runNode(script, args) {
-  const out = execFileSync(process.execPath, [script, ...args], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
-  return JSON.parse(out);
+  // structural-eval exits non-zero when it finds errors, but still prints its
+  // JSON verdict — so capture stdout regardless of exit code.
+  try {
+    const out = execFileSync(process.execPath, [script, ...args], { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
+    return JSON.parse(out);
+  } catch (e) {
+    if (e.stdout) {
+      try {
+        return JSON.parse(e.stdout);
+      } catch (_) {
+        /* fall through */
+      }
+    }
+    throw e;
+  }
 }
 
 function main() {

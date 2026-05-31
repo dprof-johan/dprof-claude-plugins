@@ -53,6 +53,21 @@ test("doctor flags a leftover wikilink as an error (exit 1)", () => {
   assert.match(r.stdout, /wikilink/i);
 });
 
+test("doctor does not flag `[[` inside inline code as a wikilink", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  // A Python type annotation in inline code legitimately contains `[[`.
+  writeDecision(
+    proj,
+    "0001-use-sqlite.md",
+    FULL_DECISION.replace("Postgres — too heavy.", "Considered a `Callable[[Entity], None]` hook and pandas `df[[col]]`; too heavy.")
+  );
+
+  const r = engine(["doctor"], { project: proj });
+  assert.equal(r.status, 0, r.stdout);
+  assert.doesNotMatch(r.stdout, /wikilink/i);
+});
+
 test("doctor flags a broken relative link as an error (exit 1)", () => {
   const proj = mkProject();
   engine(["init"], { project: proj });
