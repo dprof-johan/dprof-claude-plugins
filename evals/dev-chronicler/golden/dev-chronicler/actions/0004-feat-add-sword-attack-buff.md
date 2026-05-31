@@ -22,4 +22,4 @@ printf 'go north\ntake\nuse sword\nattack\nattack\nquit\n' | python -m rpg
 
 ## Notes / related
 - Implements [decisions/0003 — Modelling item effects](../decisions/0003-item-effects-modeling.md);
-  pinned by [0005 — Pin the sword's attack buff](0005-pin-sword-buff-test.md).
+  pinned by [0005 — Pin the sword's attack buff](0005-test-pin-sword-buff-test.md).

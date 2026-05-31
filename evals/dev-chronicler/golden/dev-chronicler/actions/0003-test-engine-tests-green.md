@@ -7,7 +7,7 @@
   a non-crit attack deals exactly the attacker's power, a high roll (>= 0.8) adds
   one "critical" damage, and `build_world()` ships the goblin and the potion.
 - Used a fake `roll` (`lambda: 0.0` / `lambda: 0.9`) to make the crit branch
-  deterministic — the payoff of injecting RNG back in [0001 — Scaffold the engine and hardcoded world](0001-scaffold-engine-and-world.md).
+  deterministic — the payoff of injecting RNG back in [0001 — Scaffold the engine and hardcoded world](0001-feat-scaffold-engine-and-world.md).
 
 ## Outcome
 - `python -m unittest` → 3 tests, 3 passing, 0 failures.

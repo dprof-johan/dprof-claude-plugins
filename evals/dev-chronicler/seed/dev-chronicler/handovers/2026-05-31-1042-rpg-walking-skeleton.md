@@ -9,9 +9,9 @@ I/O). It runs with `python -m rpg` and the engine has tests.
 
 ## What works
 - Full playthrough: take potion → go north → attack ×3 → `YOU WIN`
-  ([actions/0002 — Fight loop and command parser](../actions/0002-fight-loop-and-cli.md)).
+  ([actions/0002 — Fight loop and command parser](../actions/0002-feat-fight-loop-and-cli.md)).
 - `python -m unittest` → 3/3 green
-  ([actions/0003 — Engine smoke tests green](../actions/0003-engine-tests-green.md)).
+  ([actions/0003 — Engine smoke tests green](../actions/0003-test-engine-tests-green.md)).
 - Combat is RNG-injected, so the crit branch is deterministically tested.
 
 ## In flight / half-done

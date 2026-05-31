@@ -9,9 +9,9 @@ in the `use` command.
 
 ## What works
 - Full suite green: `python -m unittest` → 4/4 (added the sword-buff test,
-  [actions/0005 — Pin the sword's attack buff](../actions/0005-pin-sword-buff-test.md)).
+  [actions/0005 — Pin the sword's attack buff](../actions/0005-test-pin-sword-buff-test.md)).
 - Sword playthrough: go north → take → use sword → attack 3→5 → two-hit win
-  ([actions/0004 — Add a sword that buffs attack](../actions/0004-add-sword-attack-buff.md)).
+  ([actions/0004 — Add a sword that buffs attack](../actions/0004-feat-add-sword-attack-buff.md)).
 
 ## In flight / half-done
 - Nothing half-done. Item effects use a flat optional-field model

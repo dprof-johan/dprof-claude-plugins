@@ -11,12 +11,12 @@
     {
       "id": "implement-sword",
       "note": "Smallest code change + an action entry.",
-      "prompt": "Implement it with the smallest change: add `attack_bonus: int = 0` to `Item` in rpg/engine.py; add a `sword` (attack_bonus=2) to the hall in rpg/content.py (the hall keeps its goblin); in rpg/main.py make the `use` command apply `hero.attack += item.attack_bonus` alongside the existing heal. Verify with: printf 'go north\\ntake\\nuse sword\\nattack\\nattack\\nquit\\n' | python -m rpg  (the hero's attack should rise to 5 and you should see YOU WIN). Then record an action. /dev-chronicler:action add a sword that buffs attack"
+      "prompt": "Implement it with the smallest change: add `attack_bonus: int = 0` to `Item` in rpg/engine.py; add a `sword` (attack_bonus=2) to the hall in rpg/content.py (the hall keeps its goblin); in rpg/main.py make the `use` command apply `hero.attack += item.attack_bonus` alongside the existing heal. Verify with: printf 'go north\\ntake\\nuse sword\\nattack\\nattack\\nquit\\n' | python -m rpg  (the hero's attack should rise to 5 and you should see YOU WIN). Then record an action (type: feat). /dev-chronicler:action add a sword that buffs attack"
     },
     {
       "id": "test-sword",
       "note": "Pinning test + an action entry.",
-      "prompt": "Add one unittest to rpg/tests/test_engine.py that builds the world and asserts the hall's item is a sword with attack_bonus == 2. Run `python -m unittest` and confirm 4 tests pass. Then record an action. /dev-chronicler:action pin the sword's attack buff with a test"
+      "prompt": "Add one unittest to rpg/tests/test_engine.py that builds the world and asserts the hall's item is a sword with attack_bonus == 2. Run `python -m unittest` and confirm 4 tests pass. Then record an action (type: test). /dev-chronicler:action pin the sword's attack buff with a test"
     },
     {
       "id": "readme",

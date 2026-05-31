@@ -1,5 +1,6 @@
 # 0003 — Modelling item effects
 
+**Status:** Accepted
 **Date:** 2026-05-31
 
 ## Context
@@ -31,4 +32,4 @@ No new types.
 
 ## Related
 - [0002 — Hardcoded world vs data-driven content](0002-hardcoded-vs-data-driven.md) — the v1 simplicity this stays consistent with.
-- [actions/0004 — Add a sword that buffs attack](../actions/0004-add-sword-attack-buff.md) — the implementation.
+- [actions/0004 — Add a sword that buffs attack](../actions/0004-feat-add-sword-attack-buff.md) — the implementation.

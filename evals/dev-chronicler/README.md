@@ -10,6 +10,11 @@ Keeping the code change tiny and the prompts very specific keeps variance low, s
 the signal is about the *plugin's* output (the new ADR, actions, README update,
 and handover), not about how the agent codes.
 
+The golden embodies the plugin's **sourced quality bar** (typed action filenames,
+decision `Status`, "because" rationales, alternatives with pros/cons, negative
+results, reproducible commands). The judge's rubric scores candidates against
+those same principles — see the plugin README's "Principles & sources".
+
 > Layout note: this lives at `evals/<plugin-name>/` so the repo can hold evals
 > for more plugins over time.
 

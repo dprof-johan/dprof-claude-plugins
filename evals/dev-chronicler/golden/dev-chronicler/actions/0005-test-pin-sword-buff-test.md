@@ -19,4 +19,4 @@ python -m unittest
 ```
 
 ## Notes / related
-- Pins the behaviour added in [0004 — Add a sword that buffs attack](0004-add-sword-attack-buff.md).
+- Pins the behaviour added in [0004 — Add a sword that buffs attack](0004-feat-add-sword-attack-buff.md).

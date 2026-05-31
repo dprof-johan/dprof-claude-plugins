@@ -1,5 +1,6 @@
 # 0002 — Hardcoded world vs data-driven content
 
+**Status:** Accepted
 **Date:** 2026-05-30
 
 ## Context
@@ -33,4 +34,4 @@ returns `(hero, rooms, start_room)`. No external content files, no loader.
 
 ## Related
 - [0001 — Language and dependencies](0001-language-and-deps.md) — the stdlib-only constraint this works within.
-- [actions/0001 — Scaffold the engine and hardcoded world](../actions/0001-scaffold-engine-and-world.md) — implements `build_world()`.
+- [actions/0001 — Scaffold the engine and hardcoded world](../actions/0001-feat-scaffold-engine-and-world.md) — implements `build_world()`.

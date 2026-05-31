@@ -13,7 +13,7 @@
 
 ## Outcome
 - `import rpg.engine` and `rpg.content.build_world()` work; world has the
-  expected goblin and potion. No game loop yet — that's [0002 — Fight loop and command parser](0002-fight-loop-and-cli.md).
+  expected goblin and potion. No game loop yet — that's [0002 — Fight loop and command parser](0002-feat-fight-loop-and-cli.md).
 
 ## Commands
 ```

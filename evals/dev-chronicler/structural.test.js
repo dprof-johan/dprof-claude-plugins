@@ -1,6 +1,6 @@
 "use strict";
 
-// Guards the structural eval harness: the golden must score 10/10, and an
+// Guards the structural eval harness: the golden must score full marks, and an
 // obviously-deficient chronicle must fail. Runnable via `node --test` from this
 // directory (CI does this against the committed golden).
 
@@ -23,12 +23,12 @@ function runHarness(projectDir) {
   }
 }
 
-test("the golden chronicle scores 10/10 and passes", () => {
+test("the golden chronicle scores full marks and passes", () => {
   const r = runHarness(path.join(__dirname, "golden"));
   assert.equal(r.status, 0, "harness exits 0 for the golden");
   assert.equal(r.json.ok, true);
   assert.equal(r.json.score.passed, r.json.score.total);
-  assert.equal(r.json.score.total, 10);
+  assert.equal(r.json.score.total, 12);
 });
 
 test("a deficient chronicle fails the structural eval", () => {
