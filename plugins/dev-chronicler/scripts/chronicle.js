@@ -60,7 +60,7 @@ const PLACEHOLDER_MARKERS = [
   "_Relative Markdown links",
   "_What changed and",
   "_Concrete result",
-  "_Exact, runnable commands",
+  "_Command(s) that reproduce",
   "_Why this mattered",
 ];
 
@@ -240,7 +240,7 @@ function skeleton(kind, num, title) {
     "- _Concrete result: numbers, pass/fail, before→after. Note what failed or you ruled out._",
     "",
     "## Commands",
-    "_Exact, runnable commands so the result can be reproduced._",
+    "_Command(s) that reproduce/verify the Outcome — pair each with what it shows. If there's nothing non-trivial to reproduce, replace this line with a short note or remove the section._",
     "",
     "## Notes / related",
     "- _Why this mattered / next step; link a decision: [decisions/NNNN — Title](../decisions/NNNN-slug.md)._",
@@ -499,7 +499,7 @@ Captures **what** was actually done. Files are named \`NNNN-<type>-slug.md\`.
 
 ## What I did      (what changed and WHY — not keystrokes)
 ## Outcome         (concrete result + numbers; what failed / was ruled out)
-## Commands        (exact, runnable commands — reproducibility)
+## Commands        (non-trivial command(s) that reproduce the Outcome; omit if none)
 ## Notes / related (why it mattered / next step; links)
 \`\`\`
 
@@ -641,7 +641,14 @@ function scanEntry(file, sub) {
     issues.push({ level: "warning", line: 0, message: "decision is missing a **Status:** line (Proposed or Accepted)" });
   }
   if (sub === "actions" && !sectionBody(text, "Commands")) {
-    issues.push({ level: "warning", line: 0, message: "Commands section is empty — record the exact commands run (reproducibility)" });
+    // Only nudge when the Outcome claims a concrete result a command should back
+    // (tests/pass-fail/percentages/before→after) — not for design-only episodes.
+    const outcome = sectionBody(text, "Outcome");
+    const claimsResult =
+      /\b(pass(?:ed|ing)?|fail(?:ed|ing)?|tests?|green|benchmark|crash|error|ok)\b|\d+\s*\/\s*\d+|\d+\s*%|✓|✗|→/i.test(outcome);
+    if (claimsResult) {
+      issues.push({ level: "warning", line: 0, message: "Outcome claims a result but Commands is empty — add the command(s) that reproduce it" });
+    }
   }
   return issues;
 }

@@ -106,13 +106,13 @@ test("doctor warns on an unfilled placeholder but does not error", () => {
   assert.match(r.stdout, /unfilled skeleton placeholder/);
 });
 
-test("doctor warns (not errors) on missing action type, missing status, empty Commands", () => {
+test("doctor warns (not errors) on missing action type, missing status, and result-without-commands", () => {
   const proj = mkProject();
   engine(["init"], { project: proj });
-  // Action with NO type prefix in the filename and an empty Commands section.
+  // Untyped filename, and an Outcome that claims a result but no Commands to back it.
   fs.writeFileSync(
     path.join(proj, "dev-chronicler", "actions", "0001-untyped.md"),
-    "# 0001 — Untyped\n\n**Date:** 2026-05-13\n\n## What I did\n- x\n\n## Outcome\n- y\n\n## Commands\n\n## Notes / related\n- z\n"
+    "# 0001 — Untyped\n\n**Date:** 2026-05-13\n\n## What I did\n- x\n\n## Outcome\n- 3/3 tests pass\n\n## Commands\n\n## Notes / related\n- z\n"
   );
   // Decision with no Status line.
   writeDecision(proj, "0001-no-status.md", "# 0001 — No status\n\n**Date:** 2026-05-13\n\n## Context\nc\n\n## Decision\nd\n\n## Alternatives considered\na\n\n## Consequences\ncons\n\n## Related\n");
@@ -123,7 +123,23 @@ test("doctor warns (not errors) on missing action type, missing status, empty Co
   const msgs = v.warnings.map((w) => w.message).join(" | ");
   assert.match(msgs, /action filename should be NNNN-<type>/);
   assert.match(msgs, /missing a \*\*Status:\*\* line/);
-  assert.match(msgs, /Commands section is empty/);
+  assert.match(msgs, /Outcome claims a result but Commands is empty/);
+});
+
+test("doctor does NOT warn about empty Commands when the Outcome claims no result (design-only)", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  // A design/qualitative episode: empty Commands, but the Outcome makes no
+  // concrete claim that needs reproducing → no Commands warning.
+  fs.writeFileSync(
+    path.join(proj, "dev-chronicler", "actions", "0001-feat-sketch.md"),
+    "# 0001 — Sketch the layout\n\n**Date:** 2026-05-13\n\n## What I did\n- Sketched the module layout and naming.\n\n## Outcome\n- Settled on a single-file structure for now; no behaviour change.\n\n## Commands\n\n## Notes / related\n- next: implement it\n"
+  );
+
+  const r = engine(["doctor", "--json"], { project: proj });
+  const v = JSON.parse(r.stdout);
+  assert.equal(v.ok, true);
+  assert.doesNotMatch(v.warnings.map((w) => w.message).join(" | "), /Commands/);
 });
 
 test("doctor flags a Superseded-by marker pointing at a missing file", () => {
