@@ -4,7 +4,8 @@
   "description": "Repo-level dev scripts for the dprof-claude-plugins marketplace. Each plugin has its own package.json under plugins/<name>/.",
   "scripts": {
     "eval:structural": "node evals/dev-chronicler/structural-eval.js",
-    "eval:test": "node --test evals/dev-chronicler/structural.test.js"
+    "eval:judge": "node evals/dev-chronicler/judge.js",
+    "eval:test": "node --test evals/dev-chronicler/structural.test.js evals/dev-chronicler/judge.test.js"
   },
   "license": "MIT"
 }
