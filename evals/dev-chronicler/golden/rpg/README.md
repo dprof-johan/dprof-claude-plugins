@@ -22,7 +22,7 @@ python -m unittest   # run the engine tests
 | `content.py` | `build_world()` — the hardcoded world | Hardcoded on purpose ([ADR 0002](../dev-chronicler/decisions/0002-hardcoded-vs-data-driven.md)) |
 | `main.py` | Command parser + fight loop | The only module that does I/O; seams injected for scripted playthroughs |
 | `__main__.py` | `python -m rpg` entry point | One line |
-| `tests/test_engine.py` | Engine smoke tests | 4 cases ([action 0003](../dev-chronicler/actions/0003-engine-tests-green.md), [action 0005](../dev-chronicler/actions/0005-pin-sword-buff-test.md)) |
+| `tests/test_engine.py` | Engine smoke tests | 4 cases ([action 0003](../dev-chronicler/actions/0003-test-engine-tests-green.md), [action 0005](../dev-chronicler/actions/0005-test-pin-sword-buff-test.md)) |
 
 ## Background
 

@@ -1,5 +1,6 @@
 # 0001 — Language and dependencies
 
+**Status:** Accepted
 **Date:** 2026-05-30
 
 ## Context
@@ -31,4 +32,4 @@ packages, no build step. Run it with `python -m rpg`; test it with
 
 ## Related
 - [0002 — Hardcoded world vs data-driven content](0002-hardcoded-vs-data-driven.md) — builds on this one.
-- [actions/0001 — Scaffold the engine and hardcoded world](../actions/0001-scaffold-engine-and-world.md) — where this was first applied.
+- [actions/0001 — Scaffold the engine and hardcoded world](../actions/0001-feat-scaffold-engine-and-world.md) — where this was first applied.

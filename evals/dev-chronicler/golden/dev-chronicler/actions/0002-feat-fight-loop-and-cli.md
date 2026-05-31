@@ -24,4 +24,4 @@ printf 'take potion\ngo north\nattack\nattack\nattack\nquit\n' | python -m rpg
 ```
 
 ## Notes / related
-- Builds on [0001 — Scaffold the engine and hardcoded world](0001-scaffold-engine-and-world.md); uses `resolve_attack` from the engine.
+- Builds on [0001 — Scaffold the engine and hardcoded world](0001-feat-scaffold-engine-and-world.md); uses `resolve_attack` from the engine.

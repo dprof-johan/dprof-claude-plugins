@@ -131,11 +131,17 @@ function main() {
 
   const backlink = localizedBacklink(projectDir, base);
 
+  const typedRe = /^\d{4}-(feat|fix|docs|refactor|test|chore)-.+\.md$/;
+  const untyped = actions.filter((f) => !typedRe.test(f));
+  const decisionsHaveStatus = decisions.every((f) => /^\*\*Status:\*\*/m.test(read(path.join(decisionsDir, f))));
+
   const checks = [
     { id: "initialised", label: "chronicle is initialised", pass: fs.existsSync(path.join(base, ".chronicler.json")) },
     { id: "doctor-clean", label: "doctor reports no errors", pass: verdict.ok, detail: `${verdict.errors.length} error(s)` },
     { id: "decisions>=2", label: "at least 2 decisions", pass: decisions.length >= 2, detail: `${decisions.length}` },
     { id: "actions>=2", label: "at least 2 actions", pass: actions.length >= 2, detail: `${actions.length}` },
+    { id: "actions-typed", label: "all actions carry a type in the filename", pass: actions.length > 0 && untyped.length === 0, detail: `${untyped.length} untyped` },
+    { id: "decisions-status", label: "all decisions have a Status", pass: decisions.length > 0 && decisionsHaveStatus },
     { id: "handover>=1", label: "at least 1 handover", pass: handovers.length >= 1, detail: `${handovers.length}` },
     { id: "no-placeholders", label: "no unfilled placeholders", pass: placeholderWarnings.length === 0, detail: `${placeholderWarnings.length}` },
     { id: "sections-complete", label: "all required sections present", pass: sectionWarnings.length === 0, detail: `${sectionWarnings.length} missing` },

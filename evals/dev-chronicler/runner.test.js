@@ -35,8 +35,8 @@ test("dry-run chains structural + judge into one result", () => {
   assert.equal(r.mode, "dry-run");
   // structural eval ran and the seed is well-formed
   assert.equal(r.structural.ok, true);
-  assert.equal(r.structural.score.total, 10);
-  assert.equal(r.structural.score.passed, 10);
+  assert.equal(r.structural.score.total, 12);
+  assert.equal(r.structural.score.passed, 12);
   // judge ran (mock backend) and produced a full per-dimension verdict
   assert.equal(r.judge.dimensions.length, 5);
   assert.ok(r.judge.overall >= 1 && r.judge.overall <= 5);

@@ -36,11 +36,11 @@ const HERE = __dirname;
 const GOLDEN = path.join(HERE, "golden");
 
 const DIMENSIONS = [
-  { key: "coverage", title: "Coverage & altitude", guide: "Are the right things logged at the right grain — non-trivial decisions as ADRs, meaningful work episodes (not keystrokes) as actions, a handover that snapshots state? Nothing important missing; nothing trivial padded in." },
-  { key: "reasoning", title: "Decision reasoning", guide: "Do decisions explain the context/constraint, real alternatives with why they were rejected, and consequences — the *why*, not just the *what*?" },
-  { key: "outcomes", title: "Faithful outcomes", guide: "Do actions give concrete outcomes — numbers, pass/fail, exact commands, before→after — rather than vibes? Could a reader trust them?" },
-  { key: "resume", title: "Resume test", guide: "Could a fresh agent pick up the work from these entries alone, without re-explanation? Are entries self-contained yet not bloated?" },
-  { key: "linking", title: "Linking & handover", guide: "Valid cross-links between related entries, supersede markers where a decision was reversed, and a handover that genuinely primes the next agent." },
+  { key: "coverage", title: "Coverage & altitude", guide: "Are the right things logged at the right grain — a decision recorded only for a justified design choice tied to a requirement (MADR); actions at episode altitude (not keystrokes, not per-file-edit — engineering daybook); a handover that snapshots state? Nothing important missing, nothing trivial padded in. Bonus if actions carry a sensible Conventional-Commits type." },
+  { key: "reasoning", title: "Decision reasoning", guide: "Do decisions give the *why*, not just the *what*? Specifically: a Decision stated with an explicit rationale ('…because…', MADR); Alternatives listed as real options each with pros/cons and why-rejected (Fowler), not bare names; and Consequences that include the negative/neutral ones and follow-on obligations, not just upsides (Nygard)." },
+  { key: "outcomes", title: "Faithful outcomes", guide: "Do actions give concrete, trustworthy outcomes — numbers, pass/fail, before→after — paired with the exact, runnable commands that produced them (lab-notebook reproducibility)? Are negative results / failed attempts recorded, blamelessly (Google SRE postmortems)? 'Ran the tests ✅' is a fail." },
+  { key: "resume", title: "Resume test", guide: "Could a fresh agent pick up the work from these entries alone, without re-explanation? Self-contained yet not bloated; curated for a reader (links to artifacts rather than pasted raw diffs/logs); the why captured while fresh." },
+  { key: "linking", title: "Linking & handover", guide: "Valid relative-Markdown cross-links between related entries (decisions↔actions), supersede markers where a decision was reversed (kept, not deleted — Nygard), and a handover that genuinely primes the next agent (what works / in-flight / next / gotchas)." },
 ];
 
 function parseArgs(argv) {
