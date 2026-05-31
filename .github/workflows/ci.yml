@@ -38,3 +38,7 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code
       - name: Validate plugin and marketplace manifests
         run: claude plugin validate .
+      - name: Structural eval against the golden chronicle
+        run: node evals/dev-chronicler/structural-eval.js
+      - name: Structural eval harness self-tests
+        run: node --test evals/dev-chronicler/structural.test.js
