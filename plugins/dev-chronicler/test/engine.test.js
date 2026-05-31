@@ -51,13 +51,71 @@ test("allocate assigns sequential, per-kind numbers and writes a skeleton", () =
   assert.match(adr, /## Alternatives considered/);
 });
 
-test("handover prints a timestamped path", () => {
+test("handover creates a timestamped file from a skeleton", () => {
   const proj = mkProject();
   engine(["init"], { project: proj });
 
-  const p1 = engine(["handover", "--slug", "alpha"], { project: proj }).stdout.trim();
+  const p1 = engine(["handover", "--slug", "alpha", "--title", "Alpha snapshot"], { project: proj }).stdout.trim();
   assert.match(p1, /handovers[/\\]\d{4}-\d{2}-\d{2}-\d{4}-alpha\.md$/);
-  // handover only prints the path; the agent writes the file.
+  assert.ok(fs.existsSync(p1), "handover file was created");
+  const body = read(p1);
+  assert.match(body, /^# Handover — Alpha snapshot$/m);
+  assert.match(body, /## Where things stand/);
+  assert.match(body, /## Next steps/);
+});
+
+test("handover defaults the slug to 'handover' when none is given", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const p = engine(["handover"], { project: proj }).stdout.trim();
+  assert.match(p, /handovers[/\\]\d{4}-\d{2}-\d{2}-\d{4}-handover\.md$/);
+  assert.ok(fs.existsSync(p));
+});
+
+test("init is idempotent — re-running doesn't clobber edits", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const readme = path.join(proj, "dev-chronicler", "decisions", "README.md");
+  fs.writeFileSync(readme, "# Decisions\n\nHand-edited sentinel.\n");
+  const marker = path.join(proj, "dev-chronicler", ".chronicler.json");
+  const created = JSON.parse(read(marker)).created;
+
+  const r = engine(["init"], { project: proj });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(read(readme), /Hand-edited sentinel/, "existing README left untouched");
+  assert.equal(JSON.parse(read(marker)).created, created, "marker not rewritten");
+});
+
+test("status reports counts and the latest entry per kind", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  engine(["allocate", "action", "--slug", "first", "--title", "First episode"], { project: proj });
+  engine(["allocate", "action", "--slug", "second", "--title", "Second episode"], { project: proj });
+  engine(["allocate", "decision", "--slug", "a-choice", "--title", "A choice"], { project: proj });
+
+  const s = JSON.parse(engine(["status"], { project: proj }).stdout);
+  assert.equal(s.active, true);
+  assert.equal(s.actions.count, 2);
+  assert.equal(s.actions.latest, "0002 — Second episode");
+  assert.equal(s.decisions.count, 1);
+  assert.equal(s.handovers.count, 0);
+});
+
+test("slugify normalises messy slugs and falls back to 'entry'", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const a = engine(["allocate", "action", "--slug", "Hello, World!!  Again"], { project: proj });
+  assert.match(a.stdout.trim(), /actions[/\\]0001-hello-world-again\.md$/);
+  const b = engine(["allocate", "action", "--slug", "***"], { project: proj });
+  assert.match(b.stdout.trim(), /actions[/\\]0002-entry\.md$/);
+});
+
+test("allocate rejects a value-less --slug", () => {
+  const proj = mkProject();
+  engine(["init"], { project: proj });
+  const r = engine(["allocate", "action", "--slug"], { project: proj });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /requires --slug/i);
 });
 
 test("allocate on an un-initialised project fails loudly without writing files", () => {
