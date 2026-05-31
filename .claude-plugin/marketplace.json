@@ -10,7 +10,7 @@
       "name": "dev-chronicler",
       "source": "./plugins/dev-chronicler",
       "description": "Keeps a human-readable chronicle of decisions and actions, and feeds it back to fresh agents as handover memory.",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "author": { "name": "Johan Hedlund" },
       "homepage": "https://github.com/dprof-johan/dprof-claude-plugins",
       "repository": "https://github.com/dprof-johan/dprof-claude-plugins",

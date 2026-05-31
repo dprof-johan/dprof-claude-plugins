@@ -4,6 +4,21 @@ All notable changes to **dev-chronicler** are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
 the `version` field in `.claude-plugin/plugin.json`.
 
+## 0.4.3
+
+### Fixed
+- **`init` no longer runs on haiku** (now `sonnet`) and the command + skill make
+  the engine call explicit — the haiku-pinned init had been improvising the
+  scaffold by hand (`mkdir` + hand-written README/CLAUDE.md), so no
+  `.chronicler.json` marker was created and the hooks never fired.
+
+### Added
+- **`PreToolUse` guard hook** — a deterministic backstop that **denies hand-creating
+  a new file anywhere under the chronicle root** and points the agent at the
+  engine. The engine writes via `fs` (not the Write tool) so it's never blocked,
+  and editing an existing engine-made entry (filling a skeleton) is allowed. This
+  enforces engine-based logging regardless of which model is driving.
+
 ## 0.4.2
 
 ### Fixed

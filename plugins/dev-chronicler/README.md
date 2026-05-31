@@ -86,8 +86,10 @@ Set when the plugin is enabled (stored per-user); all optional:
   `Accepted` (confirmed correct) via `/dev-chronicler:accept` — the agent writes
   them and keeps working, never blocking on acceptance. `SessionStart` reminds it
   when some are pending.
-- Two **hooks**: `SessionStart` (inject handover memory) and `Stop` (an opt-in,
-  heavily rate-limited reminder to log).
+- Three **hooks**: `SessionStart` (inject handover memory), `Stop` (an opt-in,
+  heavily rate-limited reminder to log), and `PreToolUse` (a guard that blocks
+  hand-creating files under the chronicle root, so entries always go through the
+  engine — the engine writes via `fs`, not the Write tool, so it's never blocked).
 
 The `chronicle_root` (and the legacy `CHRONICLE_ROOT` env var) are treated as
 trusted configuration — they're joined to the project path without sanitising,
@@ -173,6 +175,7 @@ plugins/dev-chronicler/
 ├── scripts/chronicle.js         # the engine (numbering + doctor + migrate)
 ├── scripts/session_start.js     # SessionStart hook
 ├── scripts/stop_nudge.js        # Stop hook
+├── scripts/pretool_guard.js     # PreToolUse hook (blocks hand-created entries)
 └── CHANGELOG.md                 # per-version history
 ```
 
