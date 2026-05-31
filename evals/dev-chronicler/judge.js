@@ -29,7 +29,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execFileSync } = require("child_process");
+const { spawn } = require("child_process");
 const os = require("os");
 
 const HERE = __dirname;
@@ -128,31 +128,48 @@ function extractJson(text) {
 // ----- backends -----
 
 function callCli(prompt, model) {
-  const env = { ...process.env };
-  delete env.ANTHROPIC_API_KEY; // force subscription/login auth, not API billing
-  const directive =
-    "Follow the instructions in the piped input exactly. Output only the JSON verdict it asks for — no prose, no code fences.";
-  const args = ["-p", directive, "--output-format", "json", "--max-turns", "1"];
-  if (model) args.push("--model", model);
-  let raw;
-  try {
-    raw = execFileSync("claude", args, {
-      input: prompt,
-      env,
-      cwd: os.tmpdir(), // outside any chronicle project, so no plugin hooks fire
-      encoding: "utf8",
-      maxBuffer: 16 * 1024 * 1024,
+  // Spawn (not exec) so we can show a heartbeat during the model call instead of
+  // a silent wait, while still capturing the full JSON envelope from stdout.
+  return new Promise((resolve, reject) => {
+    const env = { ...process.env };
+    delete env.ANTHROPIC_API_KEY; // force subscription/login auth, not API billing
+    const directive =
+      "Follow the instructions in the piped input exactly. Output only the JSON verdict it asks for — no prose, no code fences.";
+    const args = ["-p", directive, "--output-format", "json", "--max-turns", "1"];
+    if (model) args.push("--model", model);
+
+    process.stderr.write(`judge: querying claude -p${model ? " (" + model + ")" : ""} `);
+    const beat = setInterval(() => process.stderr.write("."), 2500);
+
+    const child = spawn("claude", args, { cwd: os.tmpdir(), env }); // outside any chronicle project → no hooks
+    let out = "";
+    let err = "";
+    child.stdout.on("data", (d) => (out += d.toString()));
+    child.stderr.on("data", (d) => (err += d.toString()));
+    child.stdin.write(prompt);
+    child.stdin.end();
+    child.on("error", (e) => {
+      clearInterval(beat);
+      process.stderr.write("\n");
+      reject(new Error(`claude -p failed (is the CLI installed and logged in?): ${e.message}`));
     });
-  } catch (e) {
-    throw new Error(`claude -p failed (is the CLI installed and logged in?): ${e.message}`);
-  }
-  let envelope;
-  try {
-    envelope = JSON.parse(raw);
-  } catch (_) {
-    throw new Error("could not parse `claude -p --output-format json` envelope");
-  }
-  return extractJson(envelope.result || "");
+    child.on("close", (code) => {
+      clearInterval(beat);
+      process.stderr.write("\n");
+      if (code !== 0) return reject(new Error(`claude -p exited ${code}${err ? ": " + err.slice(0, 200) : ""}`));
+      let envelope;
+      try {
+        envelope = JSON.parse(out);
+      } catch (_) {
+        return reject(new Error("could not parse `claude -p --output-format json` envelope"));
+      }
+      try {
+        resolve(extractJson(envelope.result || ""));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
 }
 
 async function callApi(prompt, model) {
@@ -215,7 +232,7 @@ async function main() {
   try {
     if (backend === "mock") verdict = callMock(prompt, candidate);
     else if (backend === "api") verdict = await callApi(prompt, flags.model);
-    else verdict = callCli(prompt, flags.model || "sonnet");
+    else verdict = await callCli(prompt, flags.model || "sonnet");
   } catch (e) {
     process.stderr.write(`judge: ${e.message}\n`);
     process.exit(2);
