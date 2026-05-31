@@ -109,12 +109,14 @@ function main() {
   out.push(
     `# dev-chronicler — project handover memory\n` +
       `This project keeps a development chronicle in \`${root}/\`. As you work:\n` +
-      `- Log meaningful work *episodes* to \`${root}/actions/\` (via \`/dev-chronicler:action\`), ` +
-      `not every file edit.\n` +
+      `- Log meaningful work *episodes* to \`${root}/actions/\`, not every file edit.\n` +
       (mode === "auto"
         ? `- decision_log_mode = **auto**: when a non-trivial decision is made, write the ADR directly.\n`
         : `- decision_log_mode = **propose**: when a non-trivial decision is made, draft an ADR and confirm before writing.\n`) +
-      `- See the \`dev-chronicler\` skill for the format and discipline.`
+      `- **Always log through the engine** — invoke the \`dev-chronicler\` skill and run its \`allocate\`/\`handover\` ` +
+      `commands, then fill the file it prints. Do **not** hand-create files in \`${root}/decisions\` or \`${root}/actions\` ` +
+      `(the engine assigns the number, type, status and format) and do **not** read other plugin versions from the cache — ` +
+      `use the skill that is already loaded.`
   );
 
   // Latest handover (the curated "where things stand").

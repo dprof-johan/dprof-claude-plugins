@@ -38,6 +38,16 @@ atomically (safe even if subagents log concurrently). Invoke it as:
 node "${CLAUDE_SKILL_DIR}/../../scripts/chronicle.js" <subcommand> [args]
 ```
 
+**Always go through this engine, and only this one.** Two rules that matter:
+
+- **Never hand-create files** in `decisions/`, `actions/`, or `handovers/`. The
+  engine assigns the number, the action type, the `Status`, the filename, and the
+  skeleton — improvising a file by hand produces malformed names (e.g. date-prefixed)
+  that break numbering and fail `doctor`.
+- **Use the engine bundled with *this* loaded skill** at the path above. Do **not**
+  go searching `~/.claude/plugins/cache` for a "latest" version — you're already
+  running the right one; reading another cached copy will use the wrong format.
+
 Subcommands:
 
 - `init [--root <name>]` — scaffold the chronicle (folders + READMEs + marker).
