@@ -1,12 +1,16 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "dev-chronicler",
+  "displayName": "Dev Chronicler",
   "description": "Keeps an automatic, human-readable chronicle of the decisions and actions taken while developing a project, and feeds it back to fresh agents as handover memory.",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "author": {
-    "name": "dprof-johan"
+    "name": "Johan Hedlund",
+    "url": "https://github.com/dprof-johan"
   },
   "homepage": "https://github.com/dprof-johan/dprof-claude-plugins/tree/main/plugins/dev-chronicler",
+  "repository": "https://github.com/dprof-johan/dprof-claude-plugins",
+  "license": "MIT",
   "keywords": ["logging", "adr", "decision-log", "action-log", "handover", "memory"],
   "userConfig": {
     "decision_log_mode": {

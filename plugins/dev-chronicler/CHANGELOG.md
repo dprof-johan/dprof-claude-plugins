@@ -4,6 +4,14 @@ All notable changes to **dev-chronicler** are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/); versions match
 the `version` field in `.claude-plugin/plugin.json`.
 
+## 0.4.6
+
+### Added
+- Publishing metadata for marketplace distribution: `plugin.json` now carries
+  `displayName`, `repository`, `license`, and `author.url`, and the author name is
+  aligned with `marketplace.json` ("Johan Hedlund"). Added a top-level `LICENSE`
+  file (MIT). Passes `claude plugin validate --strict`.
+
 ## 0.4.5
 
 ### Changed
